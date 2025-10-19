@@ -20,3 +20,4 @@ xlrd
 weasyprint
 requests
 python-dotenv
+pytesseract
