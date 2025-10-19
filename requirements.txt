@@ -3,4 +3,4 @@ gunicorn
 pdfkit
 pandas
 flask_babel
-
+pytesseract
