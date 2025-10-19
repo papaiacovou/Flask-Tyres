@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Find an Invoice</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f7faff;
+            color: #29344a;
+            margin: 0; padding: 0;
+        }
+        .container {
+            max-width: 570px;
+            margin: 36px auto 0 auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 32px #0002;
+            padding: 30px 32px 32px 32px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #1876fa;
+            font-size: 2.1em;
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: .04em;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 22px;
+            color: #1876fa;
+            text-decoration: none;
+            font-size: 1.02em;
+            font-weight: 500;
+        }
+        .back-link:hover { text-decoration: underline; }
+        form {
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1em 1.2em;
+            align-items: center;
+            justify-content: center;
+        }
+        label {
+            font-weight: 500;
+            font-size: 1.01em;
+            cursor: pointer;
+        }
+        input[type="radio"] {
+            margin-right: 7px;
+            accent-color: #1876fa;
+        }
+        select {
+            font-size: 1em;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1.2px solid #bcc8e1;
+            margin-left: 5px;
+            min-width: 175px;
+            background: #f8fbff;
+            transition: border .16s;
+        }
+        select:focus {
+            outline: none;
+            border-color: #1876fa;
+            background: #fff;
+        }
+        button[type="submit"] {
+            padding: 7px 24px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #1876fa 60%, #1dcbe7 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px #1876fa11;
+            cursor: pointer;
+            transition: background .13s, box-shadow .18s;
+            margin-left: 18px;
+        }
+        button[type="submit"]:hover {
+            background: linear-gradient(90deg, #1364ce 60%, #1bbad2 100%);
+            box-shadow: 0 4px 18px #1876fa22;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .results h3 {
+            margin-bottom: 10px;
+            color: #1876fa;
+        }
+        .results ul {
+            margin: 0 0 0 10px; padding: 0;
+            list-style: disc inside;
+        }
+        .results li {
+            margin-bottom: 6px;
+            font-size: 1.04em;
+        }
+        .results a {
+            color: #1556c8;
+            text-decoration: underline;
+        }
+        .results a:hover {
+            color: #1976d2;
+            text-decoration: underline;
+        }
+        .no-results {
+            color: #c23b24;
+            margin-top: 18px;
+            font-weight: 500;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .container {
+                max-width: 99vw;
+                padding: 18px 5vw 22px 5vw;
+            }
+            form { flex-direction: column; gap: 1.2em 0; }
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const radioInvoice = document.getElementById("by_invoice");
+            const radioCompany = document.getElementById("by_company");
+            const dropdownInvoice = document.getElementById("invoice_dropdown");
+            const dropdownCompany = document.getElementById("company_dropdown");
+
+            function updateDropdowns() {
+                if (radioInvoice.checked) {
+                    dropdownInvoice.style.display = "";
+                    dropdownCompany.style.display = "none";
+                    dropdownInvoice.name = "search_value";
+                    dropdownCompany.name = "";
+                } else {
+                    dropdownInvoice.style.display = "none";
+                    dropdownCompany.style.display = "";
+                    dropdownInvoice.name = "";
+                    dropdownCompany.name = "search_value";
+                }
+            }
+            radioInvoice.addEventListener("change", updateDropdowns);
+            radioCompany.addEventListener("change", updateDropdowns);
+            updateDropdowns();
+
+            // Filter invoices when company changes
+            const allInvoices = {{ all_invoices | tojson }};
+            dropdownCompany.addEventListener("change", function() {
+                let selected = this.value;
+                dropdownInvoice.innerHTML = '<option value="">Select Invoice</option>';
+                allInvoices.forEach(inv => {
+                    if (inv.company_name === selected) {
+                        let opt = document.createElement('option');
+                        opt.value = inv.invoice_number;
+                        opt.textContent = `${inv.invoice_number} (${inv.invoice_date}, €${inv.total_amount})`;
+                        dropdownInvoice.appendChild(opt);
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+{% include 'menu.html' %}
+    <div class="container">
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+        <h2>Find an Invoice</h2>
+        <a class="back-link" href="{{ url_for('dashboard') }}">&#8592; Main Menu</a>
+        <form method="POST" autocomplete="off">
+            <label>
+                <input type="radio" name="search_type" value="invoice_number" id="by_invoice"
+                    {% if search_type == 'invoice_number' or not search_type %}checked{% endif %}>
+                By Invoice Number
+            </label>
+            <select id="invoice_dropdown" name="search_value" style="margin-left:10px;">
+                <option value="">Select Invoice</option>
+                {% for inv in all_invoices %}
+                    <option value="{{ inv.invoice_number }}"
+                      {% if search_value == inv.invoice_number %}selected{% endif %}>
+                        {{ inv.invoice_number }} ({{ inv.invoice_date }}, €{{ inv.total_amount }})
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label>
+                <input type="radio" name="search_type" value="company_name" id="by_company"
+                    {% if search_type == 'company_name' %}checked{% endif %}>
+                By Company Name
+            </label>
+            <select id="company_dropdown" name="search_value" style="display:none;">
+                <option value="">Select Company</option>
+                {% for name in company_names %}
+                    <option value="{{ name }}"
+                      {% if search_value == name %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Search</button>
+        </form>
+
+        {% if invoices %}
+            <div class="results">
+                <h3>Results:</h3>
+                <ul>
+                {% for path in invoices %}
+                    {% set filename = path.split('\\')[-1] %}
+                    {% set invoice_number = filename.split('_')[1] %}
+                    <li>
+                        <a href="{{ url_for('view_invoice', invoice_number=invoice_number) }}" target="_blank">
+                            {{ filename }}
+                        </a>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+        {% elif search_type %}
+            <div class="no-results">No invoices found.</div>
+        {% endif %}
+    </div>
+</body>
+</html>

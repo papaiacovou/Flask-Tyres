@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Sessions</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; margin: 20px auto;}
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center;}
+        th { background: #eee; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        h1 { text-align: center; }
+    </style>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+    <h1>Login / Logout Sessions</h1>
+    <table>
+        <tr>
+            <th>Username</th>
+            <th>Login Time</th>
+            <th>Logout Time</th>
+        </tr>
+        {% for username, login_time, logout_time in sessions %}
+        <tr>
+            <td>{{ username }}</td>
+            <td>{{ login_time }}</td>
+            <td>{{ logout_time if logout_time else '-' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+</body>
+</html>

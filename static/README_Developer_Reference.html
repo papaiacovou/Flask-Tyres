@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Flask Invoicing System — README (Developer Reference)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; padding: 2rem; color: #1f2937; }
+  h1, h2, h3 { color: #111827; }
+  code, pre { background: #f3f4f6; border-radius: 6px; padding: .2rem .4rem; }
+  pre { padding: 1rem; overflow: auto; }
+  .callout { background: #fef3c7; border: 1px solid #fde68a; padding: .75rem 1rem; border-radius: 8px; margin: 1rem 0; }
+  .small { color: #6b7280; font-size: .9rem; }
+  ul ul { margin-top: .25rem; }
+  a { color: #2563eb; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Flask Invoicing System — README (Developer Reference)</h1>
+  <p class="small">Generated on 2025-09-10 23:24:01</p>
+</header>
+
+<section id="overview">
+  <h2>1) Overview</h2>
+  <p><strong>Purpose:</strong> A Flask + SQLite business billing app for managing customers, inventory, invoices, quotations, receipts, and accounts receivable. Generates PDFs via <code>wkhtmltopdf</code>, supports email via SMTP (and optional Outlook compose), and includes dashboards and DB backup/restore.</p>
+  <ul>
+    <li><strong>Backend:</strong> Flask (Jinja2 templates)</li>
+    <li><strong>Database:</strong> SQLite (<code>customer.db</code>)</li>
+    <li><strong>PDF:</strong> pdfkit → wkhtmltopdf</li>
+    <li><strong>Email:</strong> SMTP (Gmail example), optional Outlook via <code>pywin32</code></li>
+    <li><strong>Auth:</strong> Session-based; passwords hashed with Werkzeug</li>
+    <li><strong>OS:</strong> Windows paths included by default (adjust for Linux/macOS)</li>
+  </ul>
+</section>
+
+<section id="installation">
+  <h2>2) Installation &amp; Setup</h2>
+  <h3>Prerequisites</h3>
+  <ul>
+    <li>Python 3.9+</li>
+    <li><a href="https://wkhtmltopdf.org/downloads.html">wkhtmltopdf</a> installed (Windows default: <code>C:\Program Files\wkhtmltopdfin\wkhtmltopdf.exe</code>)</li>
+    <li>Optional: Microsoft Outlook desktop + <code>pywin32</code> for compose window</li>
+  </ul>
+  <h3>Dependencies</h3>
+  <pre><code>pip install flask pdfkit pandas pywin32 werkzeug</code></pre>
+  <div class="callout">
+    <strong>Note:</strong> If Outlook compose isn’t needed, <code>pywin32</code> can be omitted.
+  </div>
+  <h3>Environment Variables (recommended)</h3>
+  <pre><code>FLASK_SECRET_KEY="a-strong-random-string"
+SMTP_USER="billing@example.com"
+SMTP_PASS="app-password-or-secret"
+WKHTMLTOPDF="C:\Program Files\wkhtmltopdfin\wkhtmltopdf.exe"
+DATABASE_FILE="C:lask_project\customer.db"
+BACKUP_DIR="C:lask_project\db_Backup"</code></pre>
+  <h3>Run</h3>
+  <pre><code>python app.py
+# then open http://127.0.0.1:5000</code></pre>
+  <p>On first run, DB initializes and an admin user is created if missing (<code>admin / i4ipapa</code>) with a forced password change flow.</p>
+</section>
+
+<section id="architecture">
+  <h2>3) Architecture</h2>
+  <ul>
+    <li><strong>Context processors:</strong> Inject <code>company_info</code> and <code>current_user()</code> into templates.</li>
+    <li><strong>Auth decorators:</strong> <code>@login_required</code>, <code>@admin_required</code>.</li>
+    <li><strong>Persistence:</strong> SQLite with WAL, busy timeout, FK enabled.</li>
+    <li><strong>PDF pipeline:</strong> Jinja → HTML → pdfkit → wkhtmltopdf (A4, UTF-8).</li>
+    <li><strong>Email:</strong> SMTP via Gmail example; Outlook compose if <code>pywin32</code> available.</li>
+  </ul>
+</section>
+
+<section id="schema">
+  <h2>4) Database Schema</h2>
+  <p>Core tables (columns abbreviated here for brevity):</p>
+  <ul>
+    <li><strong>users</strong>: id, username (unique), password_hash, role ('admin'|'user'), created_at, active, must_change_password, first_name, last_name</li>
+    <li><strong>company_info</strong>: company_name, email, address, city, postal, country, phone, vat_rate, vat_no, bank_name, account_number, swift, iban, updated_at</li>
+    <li><strong>bill_to_info</strong>: company_name, address, city_postal, phone, email</li>
+    <li><strong>accounts_receivable</strong>: invoice_number, company_name, invoice_date, due_date, total_amount, paid_status, current_balance, product, description, units, price, discount, subtotal, vat, voided, voided_at, void_reason</li>
+    <li><strong>quotations</strong>: quotation_number, company_name, quotation_date, due_date, total_amount, product, description, units, price, discount, subtotal, vat</li>
+    <li><strong>receipts</strong>: receipt_number (unique int), date, company_name, bill_to</li>
+    <li><strong>receipt_payments</strong>: receipt_id (FK), invoice_number, amount_paid, method, check_number, bank, total_exc_vat</li>
+    <li><strong>product_inventory</strong>: "Inventory ID", "Company", "Description", "Unit price", "Quantity in stock", "Inventory value", "Reorder level", "Reorder time in days", "Quantity in reorder", "Low Inv", "Discontinued"</li>
+  </ul>
+  <p class="small">Migrations included to add <code>voided*</code> columns and user name columns if missing.</p>
+</section>
+
+<section id="workflows">
+  <h2>5) Key Workflows</h2>
+  <h3>5.1 Invoices</h3>
+  <ol>
+    <li>Form collects line items; calculates subtotal, VAT (default 19%), total.</li>
+    <li>Creates an <code>accounts_receivable</code> row (first line item stored for list view convenience).</li>
+    <li>Decrements inventory for each item.</li>
+    <li>Renders HTML → PDF → saves under <code>C:lask_project\invoices</code>.</li>
+    <li>Actions: <code>download</code>, <code>print</code>, or <code>send</code> via SMTP.</li>
+  </ol>
+  <h3>5.2 Receipts</h3>
+  <ol>
+    <li>Creates <code>receipts</code> row + multiple <code>receipt_payments</code>.</li>
+    <li>Recomputes each invoice’s <code>current_balance</code> and <code>paid_status</code>.</li>
+    <li>Generates PDF; actions: download/print/send (Outlook compose if available, else .eml draft).</li>
+  </ol>
+  <h3>5.3 Quotations</h3>
+  <p>Similar to invoices; not tied to balances. Email sending is stubbed as “not yet implemented”.</p>
+  <h3>5.4 Voiding</h3>
+  <p><code>/void_invoice</code> checks no payments exist, then marks invoice VOID and zeroes balance.</p>
+</section>
+
+<section id="routes">
+  <h2>6) Route Reference</h2>
+  <ul>
+    <li><strong>Auth:</strong> <code>/login</code>, <code>/logout</code>, <code>/force_change_password</code>, <code>/change_password</code></li>
+    <li><strong>Users (admin):</strong> <code>/users</code>, <code>/add_user</code>, <code>/edit_user/&lt;id&gt;</code>, <code>/toggle_user_active</code>, <code>/deactivate_user</code>, <code>/delete_user/&lt;username&gt;</code></li>
+    <li><strong>Dashboard:</strong> <code>/</code>; <strong>AR list:</strong> <code>/accounts_receivable</code>; <strong>void:</strong> <code>/void_invoice</code></li>
+    <li><strong>Invoices:</strong> <code>/invoice</code>, <code>/view_invoice/&lt;no&gt;</code>, <code>/find_invoice</code>, helpers: <code>/get_*</code> endpoints</li>
+    <li><strong>Receipts:</strong> <code>/create_receipt</code>, <code>/view_receipt/&lt;no&gt;</code>, <code>/find_receipt</code></li>
+    <li><strong>Quotations:</strong> <code>/quotation</code>, <code>/view_quotation/&lt;no&gt;</code>, <code>/find_quotation</code></li>
+    <li><strong>Customers:</strong> <code>/edit_customers</code>, <code>/get_customers</code>, <code>/get_customer_details</code>, <code>/get_billto</code></li>
+    <li><strong>Inventory:</strong> <code>/product_inventory</code>, <code>/add_product</code>, <code>/add_new_product</code>, <code>/edit_inventory</code>, <code>/merge_inventory_duplicates</code>, import/delete helpers</li>
+    <li><strong>Visual Trends:</strong> <code>/visual_trends/revenue</code>, <code>/visual_trends/payments</code>, <code>/visual_trends/inventory</code></li>
+    <li><strong>Utilities (admin):</strong> <code>/backup_db</code>, <code>/restore_db</code>, <code>/company_setup</code>, <code>/about_us</code>, <code>/support</code></li>
+  </ul>
+</section>
+
+<section id="security">
+  <h2>7) Security</h2>
+  <ul>
+    <li>Use environment variables for secrets (Flask secret, SMTP credentials).</li>
+    <li>Enable HTTPS in production; add CSRF protection (e.g., Flask-WTF).</li>
+    <li>Password policies and account lockout recommended.</li>
+    <li>Audit logging for critical actions (create/void/restore/email).</li>
+  </ul>
+</section>
+
+<section id="extensibility">
+  <h2>8) Extensibility</h2>
+  <ul>
+    <li><strong>Line items:</strong> Add <code>invoice_items</code> table to store all rows per invoice.</li>
+    <li><strong>Email backends:</strong> Abstract SMTP; add OAuth providers.</li>
+    <li><strong>Multi-currency/VAT:</strong> Per-line rates and currencies.</li>
+    <li><strong>Reporting:</strong> AR aging, statements, CSV/Excel exports.</li>
+    <li><strong>RBAC:</strong> Move to granular permissions if needed.</li>
+  </ul>
+</section>
+
+<footer class="small">
+  <p>&copy; 2025 Flask Invoicing System. Developer Reference.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Accounts Payable OCR Entry</title>
+    <style>
+        body { background: #f5f6fa; font-family: Arial, sans-serif; }
+        .ap-form-wrapper { max-width: 520px; margin: 38px auto; background: #fff; padding: 28px 30px; border-radius: 15px; box-shadow: 0 8px 30px #0001; }
+        h2 { text-align: center; margin-bottom: 20px; color: #215cca;}
+        label { display: block; margin-top: 18px; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea {
+            width: 100%; padding: 8px; border: 1px solid #bfc3cf; border-radius: 7px;
+            font-size: 1em; margin-bottom: 10px; box-sizing: border-box;
+            background: #f9f9fb; transition: border 0.15s;
+        }
+        button { margin-top: 18px; padding: 12px 0; width: 100%;
+            background: #215cca; color: #fff; font-size: 1.1em; font-weight: 600;
+            border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px #0002;
+            letter-spacing: 0.5px; transition: background 0.18s;
+        }
+        button:hover { background: #163a7c; }
+        .ocr-box { margin:20px 0; background:#f6f8fa; border-radius:7px; padding:14px; font-size:0.96em; color:#466; }
+        .note { font-size: 0.95em; color: #566; margin-top: -7px; }
+        hr { margin: 30px 0 20px 0; }
+    </style>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+{% include 'back_to_dashboard.html' %}
+
+<div class="ap-form-wrapper">
+    <h2>Accounts Payable (from Invoice Scan)</h2>
+    <!-- Upload Form -->
+    <form method="POST" enctype="multipart/form-data" action="">
+        <label for="invoice_scan">Upload Invoice Scan (PDF/JPG/PNG):</label>
+        <input type="file" id="invoice_scan" name="invoice_scan" accept=".pdf,.jpg,.jpeg,.png" required>
+        <button type="submit">Extract & Fill</button>
+    </form>
+
+    <!-- Show AP entry form *only* if we have extracted data -->
+    {% if extracted.invoice_number or extracted.vendor_name or extracted.amount or extracted.invoice_date %}
+    <hr>
+    <form method="POST" action="/accounts_payable_add">
+        <label for="invoice_number">Invoice Number</label>
+        <input type="text" id="invoice_number" name="invoice_number" value="{{ extracted.invoice_number }}" maxlength="30" required>
+
+        <label for="vendor_name">Vendor Name</label>
+        <input type="text" id="vendor_name" name="vendor_name" value="{{ extracted.vendor_name }}" maxlength="60" required>
+
+        <label for="invoice_date">Invoice Date</label>
+        <input type="text" id="invoice_date" name="invoice_date" value="{{ extracted.invoice_date }}" maxlength="12" required>
+
+        <label for="amount">Amount (€)</label>
+        <input type="number" id="amount" name="amount" value="{{ extracted.amount }}" step="0.01" min="0" required>
+
+        <label for="notes">Notes <span class="note">(Optional)</span></label>
+        <textarea id="notes" name="notes" rows="2">{{ extracted.notes }}</textarea>
+
+        <button type="submit">Save Accounts Payable</button>
+    </form>
+    {% endif %}
+
+    <!-- Always show OCR output for debug -->
+    {% if ocr_text %}
+    <div class="ocr-box">
+        <b>Extracted OCR Text (debug/demo):</b><br>
+        <pre>{{ ocr_text }}</pre>
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>

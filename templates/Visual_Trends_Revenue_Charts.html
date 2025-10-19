@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visual Trends – Revenue Charts</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f8ff; margin: 0; padding: 0; }
+        .main-content { margin-left: 260px; padding: 36px 24px 24px 24px; }
+        h1, h2 { color: #1757b3; }
+        .chart-section {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px #0002;
+            padding: 32px;
+            margin-bottom: 30px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .chart-section canvas {
+            max-width: 600px;
+            max-height: 320px;
+            width: 100%;
+            height: 320px;
+            display: block;
+            margin: 0 auto;
+        }
+        .chart-title { font-size: 1.35em; margin-bottom: 14px; color: #1e4e9a; }
+        .filter-row { background: #e9f0fa; padding: 20px 20px 8px 20px; border-radius: 12px; margin-bottom: 30px; display: flex; align-items: center; gap: 16px; }
+        .filter-row label { font-weight: 500; }
+        .filter-row select { padding: 6px 12px; font-size: 1em; border: 1px solid #b3c6e3; border-radius: 6px; }
+        .filter-row button { background: #2979f7; color: #fff; border: none; padding: 7px 18px; border-radius: 6px; margin-left: 10px; font-weight: bold; cursor: pointer; }
+        @media (max-width: 900px) { .main-content { margin-left: 53px; } }
+        @media (max-width: 600px) { .chart-section { padding: 8px; } }
+    </style>
+</head>
+<body>
+    {% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+    <div class="main-content">
+        <h1><i class="fa fa-chart-bar"></i> Revenue Trends</h1>
+        
+        <!-- Filter Row: uses dropdowns for month/year to match your backend -->
+        <form class="filter-row" method="get">
+            <label for="month">Month:</label>
+            <select id="month" name="month">
+                <option value="All">All</option>
+                {% for m in months %}
+                    <option value="{{ m }}" {% if selected_month==m %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+            <label for="year">Year:</label>
+            <select id="year" name="year">
+                <option value="All">All</option>
+                {% for y in years %}
+                    <option value="{{ y }}" {% if selected_year==y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit"><i class="fa fa-filter"></i> Filter</button>
+            {% if selected_month not in (None, '', 'All', 'None') or selected_year not in (None, '', 'All', 'None') %}
+              <a href="{{ url_for('visual_trends_revenue') }}" style="margin-left:8px;color:#1e5ec6;">Reset</a>
+            {% endif %}
+        </form>
+
+        <div class="chart-section">
+            <div class="chart-title">Revenue by Customer{% if filter_label %} ({{ filter_label }}){% endif %}</div>
+            <canvas id="revenueByCustomer" width="600" height="320"></canvas>
+        </div>
+        <div class="chart-section">
+            <div class="chart-title">Revenue by Product{% if filter_label %} ({{ filter_label }}){% endif %}</div>
+            <canvas id="revenueByProduct" width="600" height="320"></canvas>
+        </div>
+        <div class="chart-section">
+            <div class="chart-title">Total Revenue (Pie Chart{% if filter_label %} – {{ filter_label }}{% endif %})</div>
+            <canvas id="revenuePie" width="600" height="320"></canvas>
+        </div>
+    </div>
+    <script>
+    // Data from backend
+    const revenueCustomer = {{ revenue_by_customer|tojson }};
+    const revenueProduct = {{ revenue_by_product|tojson }};
+    const revenuePieData = {{ revenue_pie_data|tojson }};
+
+    new Chart(document.getElementById('revenueByCustomer'), {
+        type: 'bar',
+        data: {
+            labels: revenueCustomer.labels,
+            datasets: [{
+                label: 'Revenue (€)', 
+                data: revenueCustomer.data,
+                backgroundColor: '#2988f7'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {legend: {display: false}}
+        }
+    });
+
+    new Chart(document.getElementById('revenueByProduct'), {
+        type: 'bar',
+        data: {
+            labels: revenueProduct.labels,
+            datasets: [{
+                label: 'Revenue (€)',
+                data: revenueProduct.data,
+                backgroundColor: '#48ca9b'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {legend: {display: false}}
+        }
+    });
+
+    new Chart(document.getElementById('revenuePie'), {
+        type: 'pie',
+        data: {
+            labels: revenuePieData.labels,
+            datasets: [{
+                label: 'Revenue',
+                data: revenuePieData.data,
+                backgroundColor: ['#42a5f5', '#90caf9', '#c0ecfe', '#1e88e5', '#9ccc65', '#ffb74d', '#ff8a65']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    </script>
+</body>
+</html>

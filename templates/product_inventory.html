@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>product_inventory</title>
+  <style>
+    html, body { width: 100vw; min-height: 100vh; margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f8f8f8; }
+    form { background: #fff; width: 100%; margin: 0 0 30px 0; padding: 30px 24px; border-radius: 14px; box-shadow: 0 6px 30px #0001; box-sizing: border-box; }
+    h2 { text-align: center; }
+    label { display: block; margin-top: 18px; font-weight: bold; }
+    input, select { width: 100%; padding: 7px; font-size: 1em; margin-top: 5px; border: 1px solid #bbb; border-radius: 7px; box-sizing: border-box; }
+    button { margin-top: 24px; padding: 12px 20px; font-size: 1em; border: none; border-radius: 7px; background: #215cca; color: #fff; cursor: pointer; }
+    button:hover { background: #174796; }
+    .inventory-table { border-collapse: collapse; width: 100vw; min-width: 100vw; background: #fff; margin: 0; font-size: 14px; table-layout: auto; box-shadow: 0 2px 12px #0001; }
+    .inventory-table th, .inventory-table td { border: 1px solid #d4d4d4; padding: 3px 7px; font-size: 0.95em; height: 28px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #fff; }
+    .inventory-table th { background: #f6f6ff; font-weight: 600; font-size: 13px; padding-top: 6px; padding-bottom: 6px; border-bottom: 2px solid #c6c6e6; }
+    .inventory-table tr { transition: background 0.15s; }
+    .inventory-table tr:hover { background: #f3f9ff; }
+    .actions-cell {
+      min-width: 95px;
+      text-align: center;
+      padding: 0;
+      vertical-align: middle;
+    }
+    .btn-tiny {
+      display: inline-block;
+      font-size: 12px;
+      padding: 2px 12px;
+      border-radius: 6px;
+      margin: 1px 2px;
+      border: 1.2px solid #bbb;
+      background: #f4f4f4;
+      color: #222;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      font-weight: 500;
+    }
+    .btn-tiny.edit { border-color: #71c995; background: #e7faef; color: #137d3c; }
+    .btn-tiny.edit:hover { background: #c6f5df; color: #155a2b; }
+    .btn-tiny.delete { border-color: #e7b1b1; background: #ffeaea; color: #a32a2a; }
+    .btn-tiny.delete:hover { background: #ffdfdf; color: #6d1313; }
+    .delete-all-wrapper { display:flex; justify-content:flex-end; align-items:center; margin:30px 0 0 0; width: 100vw; max-width: none; }
+    .delete-all-btn { border-radius: 18px; padding: 7px 20px; font-size: 14px; border: 1.5px solid #e7b1b1; background: #ffeaea; color: #a32a2a; margin:0; transition: background 0.18s, color 0.18s; font-weight: 500; cursor:pointer; }
+    .delete-all-btn:hover { background: #ffdfdf; color: #6d1313; }
+    .import-success-msg {
+      background: #c9f7c2;
+      color: #166b0c;
+      padding: 15px 0;
+      margin: 26px auto 14px auto;
+      border-radius: 9px;
+      font-size: 1.13em;
+      font-weight: 600;
+      max-width: 800px;
+      text-align: center;
+      box-shadow: 0 0 10px #b8e7b8;
+    }
+    .filters-bar {
+      margin: 18px 0 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 4vw 0 4vw;
+    }
+    .filters-bar label {
+      display: inline-block;
+      margin: 0 8px 0 0;
+      font-weight: normal;
+      font-size: 0.98em;
+    }
+    .filters-bar input, .filters-bar select {
+      width: auto;
+      display: inline-block;
+      min-width: 120px;
+      max-width: 200px;
+      margin: 0;
+      font-size: 1em;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .filters-bar .checkbox-label {
+      font-size: 1em;
+      font-weight: 500;
+      margin-left: 8px;
+      margin-right: 20px;
+    }
+    @media (max-width: 900px) {
+      .btn-tiny { font-size: 11px; padding: 2px 8px; }
+      .inventory-table th, .inventory-table td { font-size: 13px; padding: 2px 4px; }
+      .import-success-msg { max-width: 97vw; font-size: 1em; }
+      .filters-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+      .filters-bar input, .filters-bar select { width: 100%; min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+<h2 style="text-align:center; margin-top:18px; margin-bottom:18px;">Product Inventory</h2>
+
+  <!-- Import Excel Form -->
+  <form method="POST" enctype="multipart/form-data" action="/import_inventory">
+    <label>Import Inventory from Excel (.xlsx):</label>
+    <input type="file" name="excel_file" accept=".xlsx" required>
+    <button type="submit">Import Excel</button>
+  </form>
+
+  <!-- FILTERS BAR (NEW) -->
+  <div class="filters-bar">
+    <label>
+      Description:
+      <input type="text" id="filterDescription" placeholder="Search description...">
+    </label>
+    <label>
+      Company:
+      <select id="filterCompany">
+        <option value="">All</option>
+        {% for company in inventory_companies %}
+          <option value="{{ company }}">{{ company }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="filterLowInv"> Low Inventory Only
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" id="filterDiscontinued"> Hide Discontinued
+    </label>
+    <button type="button" onclick="resetFilters()" style="background:#eee;color:#215cca;border:1.3px solid #bbb;padding:6px 18px;margin-left:10px;">Clear Filters</button>
+  </div>
+
+  <!-- Delete All Button above table -->
+  <div class="delete-all-wrapper">
+    <form method="POST" action="/delete_all_inventory" style="margin:0;">
+      <button type="submit"
+        onclick="return confirm('Are you SURE you want to delete ALL inventory records? This cannot be undone!')"
+        class="delete-all-btn">
+        Delete All
+      </button>
+    </form>
+  </div>
+
+  <!-- Import Completed Banner -->
+  {% if imported_count is not none and imported_count > 0 %}
+    <div class="import-success-msg">
+      Import completed: {{ imported_count }} items imported!
+    </div>
+  {% endif %}
+
+  <!-- Inventory Table -->
+  {% if inventory_items %}
+      <h3 style="margin-top:16px;text-align:center;">
+      Current Inventory ({{ "{:,}".format(inventory_count) }} item{% if inventory_count != 1 %}s{% endif %})
+      &nbsp;|&nbsp; Total Stock: <b>{{ "{:,}".format(total_quantity) }}</b>
+      &nbsp;|&nbsp; Inventory Value: <b>€{{ "{:,.2f}".format(total_value) }}</b>
+    </h3>
+      <table class="inventory-table" id="inventoryTable">
+          <thead>
+              <tr>
+                  <th>Low Inv</th>
+                  <th>Inventory ID</th>
+                  <th>Company</th>
+                  <th>Description</th>
+                  <th>Unit price</th>
+                  <th>Quantity in stock</th>
+                  <th>Inventory value</th>
+                  <th>Reorder level</th>
+                  <th>Reorder time in days</th>
+                  <th>Quantity in reorder</th>
+                  <th>Discontinued</th>
+                  <th>Actions</th>
+              </tr>
+          </thead>
+         <tbody>
+  {% for row in inventory_items %}
+    <tr>
+      <td>
+        {% if row[6] is not none and row[8] is not none and row[6]|int < row[8]|int %}
+          <span style="font-size:18px;">🚩</span>
+        {% endif %}
+      </td>
+      <td>{{ row[2] }}</td>  <!-- Inventory ID -->
+      <td>{{ row[3] }}</td>  <!-- Company -->
+      <td>{{ row[4] }}</td>  <!-- Description -->
+      <td>{{ '%.2f' % (row[5] or 0) }}</td>  <!-- Unit price (2 decimals) -->
+      <td>{{ row[6] if row[6] >= 0 else 0 }}</td>  <!-- Quantity in stock: show 0 if negative -->
+      <td>{{ '%.2f' % (row[7] or 0) }}</td>  <!-- Inventory value (2 decimals) -->
+      <td>{{ row[8] }}</td>  <!-- Reorder level -->
+      <td>{{ row[9] }}</td>  <!-- Reorder time in days -->
+      <td>{{ row[10] }}</td> <!-- Quantity in reorder -->
+      <td>{{ row[11] }}</td> <!-- Discontinued -->
+      <td class="actions-cell">
+        <form method="GET" action="/edit_inventory" style="display:inline;">
+          <input type="hidden" name="id" value="{{ row[0] }}">
+          <button type="submit" class="btn-tiny edit">Edit</button>
+        </form>
+        <form method="POST" action="/delete_inventory" style="display:inline;" onsubmit="return confirm('Delete this item?');">
+          <input type="hidden" name="id" value="{{ row[0] }}">
+          <button type="submit" class="btn-tiny delete">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+</tbody>
+
+      </table>
+  {% else %}
+      <p style="text-align:center;">No inventory items found.</p>
+  {% endif %}
+
+<!-- JS FILTERS SCRIPT -->
+<script>
+  // Simple client-side filtering (works for rendered table)
+  document.addEventListener('DOMContentLoaded', function () {
+    const descInput = document.getElementById('filterDescription');
+    const companySel = document.getElementById('filterCompany');
+    const lowInvCB = document.getElementById('filterLowInv');
+    const discontinuedCB = document.getElementById('filterDiscontinued');
+    const table = document.getElementById('inventoryTable');
+    if (!table) return;
+    const rows = Array.from(table.tBodies[0].rows);
+
+    function isLowInv(row) {
+      // 🚩 icon is present? Then it's low inv
+      return row.cells[0].textContent.includes('🚩');
+    }
+    function isDiscontinued(row) {
+      return (row.cells[10].textContent.trim().toLowerCase() === "yes" || row.cells[10].textContent.trim().toLowerCase() === "true");
+    }
+    function matchCompany(row, company) {
+      return !company || row.cells[2].textContent.trim() === company;
+    }
+    function matchDescription(row, text) {
+      return !text || row.cells[3].textContent.toLowerCase().includes(text.toLowerCase());
+    }
+
+    function applyFilters() {
+      const searchDesc = descInput.value.trim();
+      const searchComp = companySel.value.trim();
+      const lowInvOnly = lowInvCB.checked;
+      const hideDiscont = discontinuedCB.checked;
+
+      rows.forEach(row => {
+        let show = true;
+        if (searchDesc && !matchDescription(row, searchDesc)) show = false;
+        if (searchComp && !matchCompany(row, searchComp)) show = false;
+        if (lowInvOnly && !isLowInv(row)) show = false;
+        if (hideDiscont && isDiscontinued(row)) show = false;
+        row.style.display = show ? '' : 'none';
+      });
+    }
+
+    descInput.addEventListener('input', applyFilters);
+    companySel.addEventListener('change', applyFilters);
+    lowInvCB.addEventListener('change', applyFilters);
+    discontinuedCB.addEventListener('change', applyFilters);
+
+    window.resetFilters = function () {
+      descInput.value = '';
+      companySel.selectedIndex = 0;
+      lowInvCB.checked = false;
+      discontinuedCB.checked = false;
+      applyFilters();
+    }
+  });
+</script>
+
+</body>
+</html>

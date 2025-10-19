@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Find a Receipt</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f7faff;
+            color: #29344a;
+            margin: 0; padding: 0;
+        }
+        .container {
+            max-width: 570px;
+            margin: 36px auto 0 auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 32px #0002;
+            padding: 30px 32px 32px 32px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #1876fa;
+            font-size: 2.1em;
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: .04em;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 22px;
+            color: #1876fa;
+            text-decoration: none;
+            font-size: 1.02em;
+            font-weight: 500;
+        }
+        .back-link:hover { text-decoration: underline; }
+        form {
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1em 1.2em;
+            align-items: center;
+            justify-content: center;
+        }
+        label {
+            font-weight: 500;
+            font-size: 1.01em;
+            cursor: pointer;
+        }
+        input[type="radio"] {
+            margin-right: 7px;
+            accent-color: #1876fa;
+        }
+        select {
+            font-size: 1em;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1.2px solid #bcc8e1;
+            margin-left: 5px;
+            min-width: 175px;
+            background: #f8fbff;
+            transition: border .16s;
+        }
+        select:focus {
+            outline: none;
+            border-color: #1876fa;
+            background: #fff;
+        }
+        select:disabled {
+            background: #e5eaf3;
+            color: #adb5be;
+            cursor: not-allowed;
+        }
+        button[type="submit"] {
+            padding: 7px 24px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #1876fa 60%, #1dcbe7 100%);
+            color: #fff;
+            box-shadow: 0 2px 8px #1876fa11;
+            cursor: pointer;
+            transition: background .13s, box-shadow .18s;
+            margin-left: 18px;
+        }
+        button[type="submit"]:hover {
+            background: linear-gradient(90deg, #1364ce 60%, #1bbad2 100%);
+            box-shadow: 0 4px 18px #1876fa22;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .results h3 {
+            margin-bottom: 10px;
+            color: #1876fa;
+        }
+        .results ul {
+            margin: 0 0 0 10px; padding: 0;
+            list-style: disc inside;
+        }
+        .results li {
+            margin-bottom: 6px;
+            font-size: 1.04em;
+        }
+        .results a {
+            color: #1556c8;
+            text-decoration: underline;
+        }
+        .results a:hover {
+            color: #1976d2;
+            text-decoration: underline;
+        }
+        .no-results {
+            color: #c23b24;
+            margin-top: 18px;
+            font-weight: 500;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .container {
+                max-width: 99vw;
+                padding: 18px 5vw 22px 5vw;
+            }
+            form { flex-direction: column; gap: 1.2em 0; }
+        }
+    </style>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const receiptRadio = document.querySelector('input[value="receipt_number"]');
+        const companyRadio = document.querySelector('input[value="company_name"]');
+        const receiptSelect = document.getElementById('receipt_number_select');
+        const companySelect = document.getElementById('company_name_select');
+        function toggleDropdowns() {
+            if (receiptRadio.checked) {
+                receiptSelect.style.display = '';
+                companySelect.style.display = 'none';
+            } else {
+                receiptSelect.style.display = 'none';
+                companySelect.style.display = '';
+            }
+        }
+        receiptRadio.addEventListener('change', toggleDropdowns);
+        companyRadio.addEventListener('change', toggleDropdowns);
+        toggleDropdowns();
+    });
+    </script>
+</head>
+<body>
+{% include 'menu.html' %}
+
+    <div class="container">
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+        <h2>Find a Receipt</h2>
+        <a class="back-link" href="{{ url_for('dashboard') }}">&larr; Main Menu</a>
+        <form method="POST" autocomplete="off">
+            <label>
+                <input type="radio" name="search_type" value="receipt_number"
+                    {% if (search_type or 'receipt_number') == 'receipt_number' %}checked{% endif %}>
+                By Receipt Number
+            </label>
+            <select name="search_value" id="receipt_number_select"
+              {% if search_type == 'company_name' %}style="display:none;"{% endif %}>
+                <option value="" disabled {% if not search_value %}selected{% endif %}>--Select Receipt--</option>
+                {% for r in all_receipts %}
+                    <option value="{{ r.receipt_number }}"
+                      {% if search_type == 'receipt_number' and search_value == r.receipt_number %}selected{% endif %}>
+                        {{ r.receipt_number }} | {{ r.company_name }} | {{ r.date }}
+                    </option>
+                {% endfor %}
+            </select>
+            <label>
+                <input type="radio" name="search_type" value="company_name"
+                    {% if search_type == 'company_name' %}checked{% endif %}>
+                By Company Name
+            </label>
+            <select name="search_value" id="company_name_select"
+              {% if (search_type or 'receipt_number') == 'receipt_number' %}style="display:none;"{% endif %}>
+                <option value="" disabled {% if not search_value %}selected{% endif %}>--Select Company--</option>
+                {% for name in company_names %}
+                    <option value="{{ name }}"
+                      {% if search_type == 'company_name' and search_value == name %}selected{% endif %}>
+                        {{ name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit">Search</button>
+        </form>
+
+        {% if receipts %}
+            <div class="results">
+                <h3>Results:</h3>
+                <ul>
+                {% for path in receipts %}
+                    {% set filename = path.split('\\')[-1] %}
+                    {% set receipt_no = filename.split('_')[1] %}
+                    <li>
+                        <a href="{{ url_for('view_receipt', receipt_number=receipt_no) }}" target="_blank">{{ filename }}</a>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+        {% elif search_type %}
+            <div class="no-results"><em>No receipts found.</em></div>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!-- templates/print_receipt.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Print Receipt {{ receipt_number }}</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background:#f6f7f9; }
+    .bar {
+      display: flex; align-items: center; gap: 10px;
+      background: #1f2937; color: #fff; padding: 10px 14px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .bar .spacer { flex: 1; }
+    .btn {
+      background: #10b981; color: #fff; border: none; border-radius: 6px;
+      padding: 8px 12px; cursor: pointer; font-size: 14px;
+    }
+    .btn.secondary { background:#374151; }
+    iframe {
+      width: 100vw; height: calc(100vh - 50px); border: 0; display: block;
+      background: #fff;
+    }
+    a { color:#93c5fd; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <div><strong>Receipt:</strong> {{ receipt_number }}</div>
+    <div class="spacer"></div>
+    <a class="btn secondary" href="{{ url_for('dashboard') }}">&larr; Back</a>
+    <button class="btn" onclick="printFrame()">Print</button>
+  </div>
+
+  <!-- Shows the saved PDF generated just before landing here -->
+  <iframe id="pdfFrame" src="{{ url_for('view_receipt', receipt_number=receipt_number) }}"></iframe>
+
+  <script>
+    function printFrame() {
+      const f = document.getElementById('pdfFrame');
+      if (f && f.contentWindow) {
+        // Best-effort; some browsers print embedded PDFs, some open a dialog
+        f.contentWindow.focus();
+        f.contentWindow.print();
+      } else {
+        window.print();
+      }
+    }
+  </script>
+</body>
+</html>

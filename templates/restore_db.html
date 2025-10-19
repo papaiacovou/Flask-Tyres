@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Restore Database</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .container { max-width: 400px; margin: 80px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 2px 18px #0001; }
+        h2 { margin-top: 0; text-align: center; }
+        label { display: block; margin-bottom: 10px; }
+        select, button { width: 100%; padding: 10px; margin-bottom: 18px; border-radius: 6px; border: 1px solid #aaa; }
+        button.restore-btn { background: #d33; color: #fff; border: none; font-weight: bold; cursor: pointer; }
+        button.restore-btn:hover { background: #b71c1c; }
+        a { display: inline-block; margin-top: 8px; text-align: center; width: 100%; color: #2c3e50; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Restore Database</h2>
+        <form id="restoreForm" method="POST" action="{{ url_for('restore_db') }}">
+            <label for="backupFile">Choose backup to restore:</label>
+            <select id="backupFile" name="backup_file" required>
+                {% for filename in backup_files %}
+                    <option value="{{ filename }}">{{ filename }}</option>
+                {% endfor %}
+            </select>
+            <button id="restoreBtn" type="button" class="restore-btn">Restore</button>
+        </form>
+        <a href="{{ url_for('dashboard') }}">&#8592; Back to Dashboard</a>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const restoreBtn = document.getElementById('restoreBtn');
+        if (restoreBtn) {
+            restoreBtn.addEventListener('click', function(e) {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Restoring will overwrite the current database with the selected backup!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, restore it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Submit the form if confirmed
+                        document.getElementById('restoreForm').submit();
+                    }
+                });
+            });
+        }
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Receipt</title>
+  <style>
+    /* Page base + soft background */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f7f9fc;
+    }
+
+    /* Centered page title */
+    .page-title {
+      text-align: center;
+      margin: 16px 0 24px;
+      font-weight: 600;
+      font-size: 2em;
+    }
+
+    /* Card-style receipt form */
+    .receipt-form {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .row { display: flex; justify-content: space-between; margin-top: 1em; }
+    .from { font-style: italic; }
+    .big { font-size: 1.15em; }
+    .right { text-align: right; }
+    .left { text-align: left; }
+
+    .main-table { width: 100%; border-collapse: collapse; margin: 2em 0 0 0; }
+    .main-table th, .main-table td { border: 1px solid #888; padding: 6px 10px; text-align: center; }
+    .main-table th { background: #ccc; }
+
+    .thankyou { font-family: "Arial Black", Arial, sans-serif; font-size: 1.5em; margin-top: 1.3em; }
+    input, select, textarea { font-size: 1em; padding: 5px; border: 1px solid #888; border-radius: 4px; }
+    textarea { width: 100%; }
+    label { font-weight: bold; }
+    .payments-title { margin: 1.8em 0 .2em 0; font-size: 1.25em; font-weight: bold; }
+    .summary-block { width: 410px; float: right; margin-right: 6px; }
+    .summary-block table { width: 100%; font-size: 1.18em; text-align: right; }
+    .summary-block td { border: none; }
+    .form-section { margin-bottom: .7em; }
+
+    /* --- Tooltip for quantity in stock --- */
+    .stock-tooltip {
+      pointer-events: none;
+      transition: opacity 0.18s;
+      position: absolute;
+      background: #fffbe7;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      padding: 7px 13px;
+      font-size: 0.92em;
+      color: #222;
+      z-index: 10;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.09);
+    }
+
+    /* --- Smaller font for Payments section --- */
+    #paymentsTable,
+    #paymentsTable th,
+    #paymentsTable td,
+    #paymentsTable input,
+    #paymentsTable select,
+    #paymentsTable button {
+      font-size: 0.91em !important;
+      padding: 2px 4px !important;
+    }
+
+    #paymentsTable th {
+      font-size: 0.96em !important;  /* Slightly bigger for headings */
+      padding: 5px 7px !important;
+    }
+  </style>
+</head>
+<body>
+  {% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+  <!-- Centered title (replaces the old gray header bar) -->
+  <h2 class="page-title">Create Receipt</h2>
+
+  <form method="post" class="receipt-form">
+    <div class="row">
+      <div class="left" style="width:35%;">
+        <span class="from">FROM:</span><br>
+        <span class="big"><b>{{ company.company_name }}</b></span><br>
+        {% if company.address %}
+          {{ company.address }}<br>
+        {% endif %}
+        {% if company.city or company.postal %}
+          {{ company.city }}{% if company.city and company.postal %}, {% endif %}{{ company.postal }}<br>
+        {% endif %}
+        {% if company.country %}
+          {{ company.country }}<br>
+        {% endif %}
+        {% if company.phone %}
+          {{ company.phone }}<br>
+        {% endif %}
+        {% if company.email %}
+          {{ company.email }}<br>
+        {% endif %}
+        {% if company.vat %}
+          VAT: {{ company.vat }}<br>
+        {% endif %}
+      </div>
+
+      <div class="left" style="width:35%;">
+        <label><b>Company Name:</b>
+          <select name="company_name" required onchange="fillBillTo(this)">
+            <option value="">--Select--</option>
+            {% for name in customer_names %}
+            <option value="{{ name }}">{{ name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <br>
+        <label><b>Bill To:</b><br>
+          <textarea name="bill_to" id="billToArea" required rows="5" cols="30"></textarea>
+        </label>
+      </div>
+
+      <div class="right" style="width:28%;">
+        <b>Receipt Number:</b>
+        <input name="receipt_number" style="width:120px;" required value="{{ next_receipt_number }}" readonly><br>
+        <b>Date:</b> <input name="date" type="date" required value="{{ today }}"><br>
+      </div>
+    </div>
+
+    <div class="payments-title">Payments</div>
+    <table class="main-table" id="paymentsTable">
+      <thead>
+        <tr>
+          <th>Invoice No</th>
+          <th>Amount Paid</th>
+          <th>Method</th>
+          <th>Check Number</th>
+          <th>Bank</th>
+          <th>Total (exc. VAT)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button type="button" onclick="addPaymentRow()">Add Payment</button><br><br>
+
+    <div>
+      <div style="float:left; margin-top: 2em;">
+        <span class="thankyou">We appreciate<br>your business!</span>
+      </div>
+      <div class="summary-block">
+        <table>
+          <tr><td>Subtotal:</td><td id="subtotal">€ 0.00</td></tr>
+          <tr><td>Amount Currently Owe:</td><td id="amountCurrentlyOwe">€ 0.00</td></tr>
+          <tr><td>Balance Due:</td><td id="balanceDue">€ 0.00</td></tr>
+          <tr><td><b>Original Invoice Amount:</b></td><td id="originalInvoiceAmount"><b>€ 0.00</b></td></tr>
+        </table>
+      </div>
+      <div style="clear: both;"></div>
+    </div>
+
+    <br>
+
+    <!-- THREE ACTION BUTTONS -->
+    <div style="margin-top: 1.8em; display:flex; gap:10px; flex-wrap:wrap">
+      <button type="submit" name="action" value="download">Generate Receipt</button>
+      <button type="submit" name="action" value="print">Generate &amp; Print</button>
+      <button type="submit" name="action" value="send">Generate &amp; Send</button>
+    </div>
+  </form>
+
+  <script>
+    // ---- State for the selected invoice (affects summary panel) ----
+    let paymentRowCount = 0;
+    let originalInvoiceAmount = 0;
+    let selectedInvoiceCurrentBalance = 0;
+
+    const eur = n => "€ " + Number(n || 0).toFixed(2);
+
+    function addPaymentRow() {
+      const table = document.getElementById("paymentsTable").getElementsByTagName('tbody')[0];
+      paymentRowCount++;
+
+      const totalId = "total_exc_vat_" + paymentRowCount;
+      const amountPaidId = "amount_paid_" + paymentRowCount;
+      const invoiceId = "invoice_number_" + paymentRowCount;
+
+      const row = table.insertRow();
+      row.innerHTML = `
+        <td>
+          <select class="invoice-select" name="invoice_number" id="${invoiceId}" required
+                  onclick="loadUnpaidInvoicesSelect('${invoiceId}')"
+                  onfocus="loadUnpaidInvoicesSelect('${invoiceId}')"
+                  onchange="onInvoiceSelected(this.value)">
+            <option value="">-- Select Invoice --</option>
+          </select>
+        </td>
+        <td>
+          <input class="amount-paid" name="amount_paid" id="${amountPaidId}" type="number" step="0.01" min="0"
+                 required oninput="copyAmountToTotal('${totalId}', this.value); capToBalance(this); updateTotals();">
+        </td>
+        <td>
+          <select name="method">
+            <option value="Cash">Cash</option>
+            <option value="Card">Card</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+          </select>
+        </td>
+        <td><input name="check_number"></td>
+        <td>
+          <select name="bank">
+            <option value=""></option>
+            <option>Alpha Bank</option>
+            <option>Ancora Bank</option>
+            <option>Astrobank</option>
+            <option>Bank of Cyprus</option>
+            <option>Eurobank</option>
+            <option>Hellenic Bank</option>
+          </select>
+        </td>
+        <td><input name="total_exc_vat" id="${totalId}" type="number" step="0.01" readonly></td>
+        <td><button type="button" onclick="this.parentElement.parentElement.remove(); updateTotals();">Remove</button></td>
+      `;
+    }
+
+    // Populate the invoice dropdown with UNPAID/PARTIAL (optionally filtered by company)
+    function loadUnpaidInvoicesSelect(selectId) {
+      let company = document.querySelector('[name="company_name"]')?.value?.trim() || '';
+      let url = '/get_unpaid_invoices';
+      if (company) url += '?company=' + encodeURIComponent(company);
+
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          const sel = document.getElementById(selectId);
+          const currentValue = sel.value;
+          sel.innerHTML = '<option value="">-- Select Invoice --</option>';
+          data.forEach(inv => {
+            const opt = document.createElement('option');
+            opt.value = inv.invoice_number;
+            const total = Number(inv.total_amount || 0).toFixed(2);
+            const bal = Number(inv.current_balance || 0).toFixed(2);
+            opt.textContent = `Invoice ${inv.invoice_number} • ${inv.paid_status} • Total €${total} • Balance €${bal}`;
+            sel.appendChild(opt);
+          });
+          if ([...sel.options].some(o => o.value === currentValue)) sel.value = currentValue;
+        })
+        .catch(() => {
+          const sel = document.getElementById(selectId);
+          sel.innerHTML = '<option value="">-- Select Invoice --</option>';
+        });
+    }
+
+    // Fill company select and Bill To textarea
+    function setCompanyAndBillTo(companyName, address, city_postal, phone, email) {
+      const sel = document.querySelector('[name="company_name"]');
+      if (sel) {
+        let existing = Array.from(sel.options).find(o => o.value === companyName);
+        if (!existing && companyName) {
+          const opt = document.createElement('option');
+          opt.value = companyName;
+          opt.textContent = companyName;
+          sel.appendChild(opt);
+        }
+        sel.value = companyName || '';
+      }
+      const billToArea = document.getElementById('billToArea');
+      const lines = [companyName, address, city_postal, phone, email].filter(Boolean);
+      billToArea.value = lines.join('\n');
+    }
+
+    // When an invoice is chosen: fetch bill-to AND amounts (two endpoints), then update summary
+    async function onInvoiceSelected(invoiceNo) {
+      invoiceNo = (invoiceNo || '').trim();
+      if (!invoiceNo) return;
+
+      try {
+        const [infoResp, balResp] = await Promise.all([
+          fetch('/get_invoice_info?invoice_number=' + encodeURIComponent(invoiceNo), {cache: 'no-store'}),
+          fetch('/get_invoice_balance?invoice_number=' + encodeURIComponent(invoiceNo), {cache: 'no-store'})
+        ]);
+        const info = await infoResp.json();
+        const bal  = await balResp.json();
+
+        if (info && info.success) {
+          setCompanyAndBillTo(
+            info.company_name || '',
+            info.address || '',
+            info.city_postal || '',
+            info.phone || '',
+            info.email || ''
+          );
+        } else {
+          setCompanyAndBillTo('', '', '', '', '');
+        }
+
+        if (bal && bal.success) {
+          originalInvoiceAmount = Number(bal.total_amount || 0);
+          selectedInvoiceCurrentBalance = Number(bal.current_balance || 0);
+        } else {
+          originalInvoiceAmount = 0;
+          selectedInvoiceCurrentBalance = 0;
+        }
+
+        document.getElementById('originalInvoiceAmount').textContent = eur(originalInvoiceAmount);
+        document.getElementById('amountCurrentlyOwe').textContent = eur(selectedInvoiceCurrentBalance);
+        document.getElementById('balanceDue').textContent = eur(selectedInvoiceCurrentBalance);
+
+        updateTotals();
+      } catch (e) {
+        console.error(e);
+        setCompanyAndBillTo('', '', '', '', '');
+        originalInvoiceAmount = 0;
+        selectedInvoiceCurrentBalance = 0;
+        updateTotals();
+      }
+    }
+
+    function capToBalance(inp) {
+      const val = parseFloat(inp.value || 0);
+      if (val > selectedInvoiceCurrentBalance) {
+        inp.value = selectedInvoiceCurrentBalance.toFixed(2);
+      } else if (val < 0) {
+        inp.value = '0.00';
+      }
+    }
+
+    function copyAmountToTotal(totalId, value) {
+      document.getElementById(totalId).value = value;
+      updateTotals();
+    }
+
+    function updateTotals() {
+      let subtotal = 0;
+      document.querySelectorAll('input[name="amount_paid"]').forEach(i => {
+        subtotal += parseFloat(i.value) || 0;
+      });
+      document.getElementById('subtotal').textContent = eur(subtotal);
+      document.getElementById('amountCurrentlyOwe').textContent = eur(selectedInvoiceCurrentBalance);
+      document.getElementById('balanceDue').textContent = eur(Math.max(selectedInvoiceCurrentBalance - subtotal, 0));
+      document.getElementById('originalInvoiceAmount').textContent = eur(originalInvoiceAmount);
+    }
+
+    function fillBillTo(sel) {
+      fetch('/get_billto?name=' + encodeURIComponent(sel.value))
+        .then(r => r.json())
+        .then(d => { document.getElementById('billToArea').value = d.bill_to || ""; });
+    }
+
+    window.onload = addPaymentRow;
+  </script>
+</body>
+</html>

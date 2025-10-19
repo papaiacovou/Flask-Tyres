@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Add / Edit Customers</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0 32px; }
+    h1 { text-align:center; }
+    .card { background:#fff; border:1px solid #ddd; padding:14px; border-radius:10px; margin:18px auto; max-width:1100px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #eee; }
+    input[type="text"], input[type="email"] { width: 100%; box-sizing: border-box; padding:6px; }
+    .row-actions { display:flex; gap:8px; justify-content:center; }
+    .btn { padding:6px 10px; border:1px solid #888; background:#f6f6f6; cursor:pointer; border-radius:6px; }
+    .btn.save { background:#e9f8ee; border-color:#3aa463; }
+    .btn.delete { background:#fde7e7; border-color:#cf4444; }
+    .btn.add { background:#e6eefc; border-color:#4b7bd8; }
+    .flash { color:#b00; margin:10px 0; }
+    .search-box { margin-bottom: 12px; text-align: right; }
+  </style>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+   <h1>Add / Edit Customers</h1>
+
+ 
+
+  <!-- Add new customer -->
+  <div class="card">
+    <h3>Add New Customer</h3>
+    <form method="post">
+      <input type="hidden" name="action" value="add">
+      <table>
+        <tr>
+          <th>Company Name*</th><th>Address</th><th>City / Postal</th><th>Phone</th><th>Email</th><th>Action</th>
+        </tr>
+        <tr>
+          <td><input name="company_name" required></td>
+          <td><input name="address"></td>
+          <td><input name="city_postal"></td>
+          <td><input name="phone"></td>
+          <td><input name="email" type="email"></td>
+          <td><button class="btn add" type="submit">Add</button></td>
+        </tr>
+      </table>
+    </form>
+  </div>
+
+  <!-- Edit existing -->
+  <div class="card">
+    <h3>Existing Customers</h3>
+    <!-- SEARCH BOX ADDED HERE -->
+    <div class="search-box">
+      <label for="customerSearch"><strong>Search Customers:</strong></label>
+      <input type="text" id="customerSearch" placeholder="Type to search company, phone, email..." style="width:260px; padding:5px;">
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Company Name*</th>
+          <th>Address</th>
+          <th>City / Postal</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Created At</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for c in customers %}
+        <tr>
+          <!-- Inputs belong to the row's form via form="f{{c[0]}}" -->
+          <td>{{ c[0] }}</td>
+          <td><input name="company_name" form="f{{ c[0] }}" value="{{ c[1] }}" required></td>
+          <td><input name="address"      form="f{{ c[0] }}" value="{{ c[2] }}"></td>
+          <td><input name="city_postal"  form="f{{ c[0] }}" value="{{ c[3] }}"></td>
+          <td><input name="phone"        form="f{{ c[0] }}" value="{{ c[4] }}"></td>
+          <td><input name="email" type="email" form="f{{ c[0] }}" value="{{ c[5] }}"></td>
+          <td>{{ c[6] }}</td>
+          <td class="row-actions">
+            <!-- UPDATE form lives here -->
+            <form id="f{{ c[0] }}" method="post" onsubmit="return confirmSave('f{{ c[0] }}');">
+              <input type="hidden" name="action" value="update">
+              <input type="hidden" name="id" value="{{ c[0] }}">
+              <button class="btn save" type="submit">Save</button>
+            </form>
+
+            <!-- DELETE form -->
+            <form method="post" onsubmit="return confirmDelete();">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="id" value="{{ c[0] }}">
+              <button class="btn delete" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="text-align:center; margin:16px 0;">
+    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+  </div>
+
+  <script>
+    function confirmDelete() {
+      return confirm('Delete this customer? This cannot be undone.');
+    }
+    function confirmSave(formId) {
+      const company = document.querySelector(`input[name="company_name"][form="${formId}"]`);
+      if (!company || !company.value.trim()) {
+        alert('Company name is required.');
+        return false;
+      }
+      return true;
+    }
+
+    // Customer search/filter script
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchBox = document.getElementById('customerSearch');
+      if (!searchBox) return;
+      searchBox.addEventListener('input', function() {
+        const filter = this.value.trim().toLowerCase();
+        document.querySelectorAll('.card table tbody tr').forEach(function(row) {
+          // Combine company, address, city, phone, email
+          const searchString = Array.from(row.querySelectorAll('td')).slice(1, 6)
+            .map(td => {
+              // Use input value if present, otherwise cell text
+              const inp = td.querySelector('input');
+              return inp ? inp.value : td.textContent;
+            })
+            .join(' ')
+            .toLowerCase();
+          row.style.display = filter === '' || searchString.includes(filter) ? '' : 'none';
+        });
+      });
+    });
+  </script>
+</body>
+</html>

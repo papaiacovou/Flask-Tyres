@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Vendor Product</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f7fafc; }
+    .container { max-width: 540px; margin: 40px auto; background: #fff; border-radius: 16px; padding: 32px 34px 28px 34px; box-shadow: 0 2px 16px #0002;}
+    h2 { text-align: center; color: #234796; margin-bottom: 30px; }
+    label { font-weight: bold; display: block; margin-bottom: 5px; }
+    input, select { width: 100%; padding: 8px; margin-bottom: 16px; border: 1px solid #c7c8d0; border-radius: 7px; font-size: 1em;}
+    .actions { text-align: right; margin-top: 10px; }
+    button {
+      background: #234796; color: #fff; border: none; padding: 10px 24px; border-radius: 8px;
+      font-size: 1.05em; cursor: pointer; font-weight: bold; letter-spacing: .2px;
+    }
+    button:hover { background: #1760aa; }
+    .back-link { text-decoration: none; color: #444; margin-bottom: 18px; display: inline-block; }
+    .flashes { color: #d32f2f; margin-bottom: 12px; text-align: center; }
+    .readonly { background: #f2f2f2; }
+  </style>
+  <script>
+    // Auto-calculate Inventory Value
+    function updateInventoryValue() {
+      let price = parseFloat(document.getElementById('unit_price').value) || 0;
+      let qty = parseInt(document.getElementById('quantity_in_stock').value) || 0;
+      document.getElementById('inventory_value').value = (price * qty).toFixed(2);
+    }
+  </script>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+  <div class="container">
+    <a href="{{ url_for('product_inventory') }}" class="back-link">&larr; Back to Inventory</a>
+    <h2>Add Vendor Product</h2>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flashes">
+          {% for message in messages %}
+            <div>{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('add_vendor') }}" method="post" autocomplete="off">
+      <label for="Inventory_ID">Inventory ID</label>
+      <input type="text" id="Inventory_ID" name="Inventory ID" required>
+
+      <label for="Company">Company</label>
+      <input type="text" id="Company" name="Company" required>
+
+      <label for="Description">Description</label>
+      <input type="text" id="Description" name="Description" required>
+
+      <label for="unit_price">Unit price (€)</label>
+      <input type="number" step="0.01" min="0" id="unit_price" name="Unit price" required oninput="updateInventoryValue()">
+
+      <label for="quantity_in_stock">Quantity in stock</label>
+      <input type="number" min="0" id="quantity_in_stock" name="Quantity in stock" required oninput="updateInventoryValue()">
+
+      <label for="inventory_value">Inventory value (€)</label>
+      <input type="number" step="0.01" min="0" id="inventory_value" name="Inventory value" class="readonly" readonly required>
+
+      <label for="reorder_level">Reorder level</label>
+      <input type="number" min="0" id="reorder_level" name="Reorder level">
+
+      <label for="reorder_time_in_days">Reorder time in days</label>
+      <input type="number" min="0" id="reorder_time_in_days" name="Reorder time in days">
+
+      <label for="quantity_in_reorder">Quantity in reorder</label>
+      <input type="number" min="0" id="quantity_in_reorder" name="Quantity in reorder">
+
+      <label for="Discontinued">Discontinued</label>
+      <select id="Discontinued" name="Discontinued">
+        <option value="No" selected>No</option>
+        <option value="Yes">Yes</option>
+      </select>
+
+      <div class="actions">
+        <button type="submit">Add Vendor</button>
+      </div>
+    </form>
+  </div>
+  <script>
+    updateInventoryValue();
+  </script>
+</body>
+</html>

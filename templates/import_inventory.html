@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Import Inventory from Excel</title>
+  <style>
+    body {
+      background: #fafbfc;
+      font-family: Arial, sans-serif;
+    }
+    .center-box {
+      background: #fff;
+      margin: 80px auto 0 auto;
+      padding: 40px 48px 40px 48px;
+      border-radius: 18px;
+      box-shadow: 0 6px 30px #0001;
+      max-width: 480px;
+      text-align: center;
+    }
+    h2 {
+      font-weight: bold;
+      margin-bottom: 24px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+      text-align: left;
+    }
+    input[type="file"] {
+      margin-bottom: 24px;
+      width: 100%;
+      font-size: 1em;
+    }
+    button {
+      padding: 14px 38px;
+      font-size: 1.15em;
+      background: #225ada;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      margin-top: 16px;
+      font-weight: 600;
+      transition: background 0.18s;
+    }
+    button:hover {
+      background: #1843a3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="center-box">
+    <h2>Import Inventory from Excel <span style="color:#333;">(.xlsx)</span>:</h2>
+    <form method="POST" enctype="multipart/form-data" action="/import_inventory">
+      <input type="file" name="excel_file" accept=".xlsx" required>
+      <br>
+      <button type="submit">Import Excel</button>
+    </form>
+  </div>
+
+  {% if imported_count is not none %}
+    <script>
+      {% if imported_count == -1 %}
+        alert("Import failed. Please check the file and try again.");
+      {% else %}
+        alert("Import completed: {{ imported_count }} items imported!");
+      {% endif %}
+    </script>
+  {% endif %}
+
+</body>
+</html>

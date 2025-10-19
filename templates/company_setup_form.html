@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Company Setup</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            background: #f6f8fb;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            margin: 48px auto;
+            padding: 32px 36px 28px 36px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 6px 32px 0 rgba(45,70,120,0.09), 0 1.5px 5px 0 rgba(40,80,130,0.07);
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 24px;
+            font-size: 2.0rem;
+            letter-spacing: 0.5px;
+            color: #294274;
+            text-align: center;
+            font-weight: 600;
+        }
+        .section-title {
+            margin-top: 36px;
+            margin-bottom: 10px;
+            font-size: 1.14rem;
+            font-weight: 600;
+            color: #3360a8;
+            border-bottom: 1.5px solid #e3e8f0;
+            padding-bottom: 3px;
+            letter-spacing: 0.4px;
+        }
+        label {
+            display: block;
+            margin-top: 16px;
+            margin-bottom: 5px;
+            color: #26334a;
+            font-size: 1rem;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        input[type="password"],
+        select {
+            width: 100%;
+            max-width: 100%;
+            padding: 9px 12px;
+            margin-top: 2px;
+            border: 1px solid #ccd7e4;
+            border-radius: 7px;
+            font-size: 1rem;
+            background: #fafdff;
+            transition: border-color 0.18s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #5689d6;
+            background: #f2f8ff;
+        }
+        button {
+            display: block;
+            margin: 32px auto 0 auto;
+            padding: 11px 42px;
+            background: linear-gradient(90deg, #4688f1 0%, #3355a8 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.09rem;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            box-shadow: 0 1.5px 8px 0 rgba(40,80,130,0.11);
+            cursor: pointer;
+            transition: background 0.22s, transform 0.16s;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #3574d4 0%, #294274 100%);
+            transform: translateY(-2px) scale(1.035);
+        }
+        @media (max-width: 700px) {
+            .container { max-width: 98vw; padding: 16px 7vw 18px 7vw; }
+        }
+    </style>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+    <div class="container">
+        <h2>Company Setup</h2>
+        <form method="POST" autocomplete="off">
+            <label>Company Name:
+                <input type="text" name="company_name" required value="{{ company.company_name or '' }}">
+            </label>
+            <label>Email:
+                <input type="email" name="email" required value="{{ company.email or '' }}">
+            </label>
+            <label>Address:
+                <input type="text" name="address" value="{{ company.address or '' }}">
+            </label>
+            <label>City:
+                <input type="text" name="city" value="{{ company.city or '' }}">
+            </label>
+            <label>Postal:
+                <input type="text" name="postal" value="{{ company.postal or '' }}">
+            </label>
+            <label>Country:
+                <input type="text" name="country" value="{{ company.country or '' }}">
+            </label>
+            <label>Phone:
+                <input type="text" name="phone" value="{{ company.phone or '' }}">
+            </label>
+            <label>VAT Rate:
+                <input type="number" step="0.01" name="vat_rate" value="{{ company.vat_rate or '' }}">
+            </label>
+            <label>VAT Number:
+                <input type="text" name="vat" value="{{ company.vat or '' }}">
+            </label>
+            <div class="section-title">Bank Details</div>
+            <label>Bank Name:
+                <input type="text" name="bank_name" value="{{ company.bank_name or '' }}">
+            </label>
+            <label>Account Number:
+                <input type="text" name="account_number" value="{{ company.account_number or '' }}">
+            </label>
+            <label>IBAN:
+                <input type="text" name="iban" value="{{ company.iban or '' }}">
+            </label>
+            <label>SWIFT:
+                <input type="text" name="swift" value="{{ company.swift or '' }}">
+            </label>
+            <div class="section-title">Email/SMTP Settings</div>
+            <label>SMTP Host:
+                <input type="text" name="smtp_host" value="{{ company.smtp_host or '' }}">
+            </label>
+            <label>SMTP Port:
+                <input type="number" name="smtp_port" value="{{ company.smtp_port or '' }}">
+            </label>
+            <label>SMTP Security:
+                <select name="smtp_security">
+                    <option value="" {% if not company.smtp_security %}selected{% endif %}>--Select--</option>
+                    <option value="ssl" {% if company.smtp_security=='ssl' %}selected{% endif %}>SSL</option>
+                    <option value="tls" {% if company.smtp_security=='tls' %}selected{% endif %}>TLS</option>
+                    <option value="starttls" {% if company.smtp_security=='starttls' %}selected{% endif %}>STARTTLS</option>
+                    <option value="none" {% if company.smtp_security=='none' %}selected{% endif %}>None</option>
+                </select>
+            </label>
+            <label>SMTP Username:
+                <input type="text" name="smtp_username" value="{{ company.smtp_username or '' }}">
+            </label>
+            <label>SMTP Password:
+                <input type="password" name="smtp_password" autocomplete="new-password" value="{{ company.smtp_password or '' }}">
+            </label>
+            <label>Sender Name:
+                <input type="text" name="email_sender" value="{{ company.email_sender or '' }}">
+            </label>
+            <label>Sender Email Address:
+                <input type="email" name="email_sender_address" value="{{ company.email_sender_address or '' }}">
+            </label>
+            
+            {% if not company %}
+                <button type="submit" name="action" value="create">Save</button>
+            {% else %}
+                <button type="submit" name="action" value="update">Update</button>
+            {% endif %}
+        </form>
+    </div>
+</body>
+</html>

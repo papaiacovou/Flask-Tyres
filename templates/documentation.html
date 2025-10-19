@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>System Documentation — Admin Guide (Printable)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; line-height: 1.6; padding: 2rem; color: #111; }
+  h1, h2, h3 { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  .step { border-left: 4px solid #e5e7eb; padding-left: 1rem; margin: 1rem 0; }
+  .note { background: #eef2ff; border: 1px solid #c7d2fe; padding: .75rem 1rem; border-radius: 8px; }
+  .warn { background: #fff7ed; border: 1px solid #fed7aa; padding: .75rem 1rem; border-radius: 8px; }
+  .placeholder { color: #6b7280; font-style: italic; }
+  @media print { a[href]:after { content: " (" attr(href) ")"; font-size: .8em; } }
+</style>
+</head>
+<body>
+{% include 'menu.html' %}
+<header>
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+  <h1>System Documentation</h1>
+  <p><em>For office staff and administrators. Generated on {{ generated_time }}</em></p>
+</header>
+
+<section>
+  <h2>Getting Started</h2>
+  <div class="step">
+    <p><strong>Login</strong> at <code>/login</code> with your username and password.</p>
+    <p>If prompted to change your password, follow the on-screen steps.</p>
+    <p class="placeholder">[Insert screenshot of Login page here]</p>
+  </div>
+  <div class="note">
+    <strong>Tip:</strong> If you forget your password, contact an administrator to reset it.
+  </div>
+</section>
+
+<section>
+  <h2>Company Profile</h2>
+  <div class="step">
+    <ol>
+      <li>Open <code>/company_setup</code> (admin only).</li>
+      <li>Enter company details (name, email, VAT rate/no, bank details).</li>
+      <li>Click <strong>Create</strong> the first time, then <strong>Update</strong> for future edits.</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Company Setup form here]</p>
+  </div>
+</section>
+
+<section>
+  <h2>Users (Admins)</h2>
+  <div class="step">
+    <ol>
+      <li>Go to <code>/users</code> to view user list.</li>
+      <li><strong>Add User</strong> to create a new account. New users must confirm or change their password on first login.</li>
+      <li>Use <strong>Edit</strong>, <strong>Deactivate</strong>/<strong>Activate</strong>, or <strong>Delete</strong> as needed.</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Users page here]</p>
+  </div>
+</section>
+
+<section>
+  <h2>Customers</h2>
+  <div class="step">
+    <ol>
+      <li>Open <code>/edit_customers</code>.</li>
+      <li>Use <strong>Add</strong> to create a new customer (Company, Address, City/Postal, Phone, Email).</li>
+      <li>Use <strong>Update</strong> or <strong>Delete</strong> to maintain records.</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Customers page here]</p>
+  </div>
+</section>
+
+<section>
+  <h2>Inventory</h2>
+  <div class="step">
+    <ol>
+      <li>Go to <code>/product_inventory</code> to view all items.</li>
+      <li>Use <strong>Add New Product</strong> to create an item, or <strong>Add Product</strong> to increase stock qty.</li>
+      <li>Use <strong>Edit</strong> to update quantities/price; the system automatically updates “Low Inv” and “Inventory value”.</li>
+      <li>Import from Excel via the <strong>Import</strong> button (supported columns should align with the table headers).</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Inventory page here]</p>
+  </div>
+</section>
+
+<section>
+  <h2>Create an Invoice</h2>
+  <div class="step">
+    <ol>
+      <li>Open <code>/invoice</code>.</li>
+      <li>Fill in <strong>Bill To</strong> (or select a known company to auto-fill).</li>
+      <li>Add line items (Inventory ID, Description, Units, Price, Discount).</li>
+      <li>Review totals (Subtotal, VAT, Total).</li>
+      <li>Choose an action:
+        <ul>
+          <li><strong>Download</strong> — saves and downloads PDF.</li>
+          <li><strong>Print</strong> — shows print viewer.</li>
+          <li><strong>Send</strong> — emails PDF to customer.</li>
+        </ul>
+      </li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Invoice form here]</p>
+  </div>
+  <div class="note">
+    <strong>Inventory:</strong> Posting an invoice reduces stock for matching Inventory ID + Description.
+  </div>
+</section>
+
+<section>
+  <h2>Find / View an Invoice</h2>
+  <div class="step">
+    <ol>
+      <li>Use <code>/find_invoice</code> to search by invoice number or company name.</li>
+      <li>Or open <code>/view_invoice/&lt;number&gt;</code> to view the latest PDF matching that number.</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Find Invoice page here]</p>
+  </div>
+</section>
+
+<section>
+  <h2>Create a Receipt</h2>
+  <div class="step">
+    <ol>
+      <li>Open <code>/create_receipt</code>.</li>
+      <li>Select customer &amp; Bill To, then list one or more invoice numbers being paid.</li>
+      <li>Enter amounts, payment method, and (optional) check/bank info.</li>
+      <li>Submit to generate the receipt PDF.</li>
+      <li>Action: <strong>Download</strong>, <strong>Print</strong>, or <strong>Send</strong> (Outlook compose or EML draft).</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Create Receipt form here]</p>
+  </div>
+  <div class="note">
+    <strong>Balances:</strong> The system updates each invoice’s balance and paid status automatically.
+  </div>
+</section>
+
+<section>
+  <h2>Quotations</h2>
+  <div class="step">
+    <ol>
+      <li>Open <code>/quotation</code>.</li>
+      <li>Fill in items and Bill To as for invoices.</li>
+      <li>Download or print the PDF. (Email sending for quotations is not yet implemented.)</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Quotation form here]</p>
+  </div>
+</section>
+
+<section>
+  <h2>Accounts Receivable</h2>
+  <div class="step">
+    <ol>
+      <li>Open <code>/accounts_receivable</code> to see all invoices, filters, and totals.</li>
+      <li>Use the month filter or show only Unpaid/Partial invoices.</li>
+      <li>Totals and counts update according to filters.</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Accounts Receivable list here]</p>
+  </div>
+</section>
+
+<section>
+  <h2>Void an Invoice</h2>
+  <div class="step">
+    <ol>
+      <li>From the AR page, use the <strong>Void</strong> action or submit the void form.</li>
+      <li>Provide a reason. Voiding is only allowed if no payments exist on the invoice.</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Void confirmation here]</p>
+  </div>
+  <div class="warn">
+    <strong>Warning:</strong> Voiding cannot be undone. A new invoice must be issued if needed.
+  </div>
+</section>
+
+<section>
+  <h2>Visual Trends (Charts)</h2>
+  <div class="step">
+    <ol>
+      <li>Open <code>/visual_trends/revenue</code> to view revenue by customer/product (optional month/year filter).</li>
+      <li>Open <code>/visual_trends/payments</code> for totals by paid status.</li>
+      <li>Open <code>/visual_trends/inventory</code> for inventory trends.</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Revenue charts here]</p>
+  </div>
+</section>
+
+<section>
+  <h2>Backup &amp; Restore (Admins)</h2>
+  <div class="step">
+    <h3>Backup</h3>
+    <ol>
+      <li>Open <code>/backup_db</code> to copy the database into the backup folder with a timestamped filename.</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of successful Backup message here]</p>
+    <h3>Restore</h3>
+    <ol>
+      <li>Open <code>/restore_db</code>.</li>
+      <li>Select a backup file and confirm restore.</li>
+      <li>The current DB is saved aside before restore.</li>
+    </ol>
+    <p class="placeholder">[Insert screenshot of Restore page here]</p>
+  </div>
+</section>
+
+<section>
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><strong>PDF not generated:</strong> Ensure wkhtmltopdf is installed and the path is correct.</li>
+    <li><strong>Email failed:</strong> Check SMTP credentials or try Outlook compose/EML draft.</li>
+    <li><strong>Can’t log in:</strong> Ask an admin to verify that your user is Active.</li>
+    <li><strong>Inventory not updating:</strong> Confirm Inventory ID + Description match exactly.</li>
+  </ul>
+</section>
+
+<footer>
+  <p><em>End of Admin Guide.</em></p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Print Invoice {{ invoice_number }}</title>
+  <style> body { margin:0; } iframe { border:0; width:100vw; height:100vh; } </style>
+</head>
+<body>
+  <iframe id="pdfFrame" src="{{ url_for('view_invoice', invoice_number=invoice_number) }}"></iframe>
+  <script>
+    const iframe = document.getElementById('pdfFrame');
+    iframe.addEventListener('load', () => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch (_) {}
+    });
+  </script>
+</body>
+</html>

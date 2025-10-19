@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Product</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Top menu bar -->
+    {% include 'menu.html' %}
+    <!-- Optional: Back to Dashboard link just below the menu -->
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+    
+    <!-- Main content with margin-top for menu -->
+    <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg mt-20 mx-auto">
+        <h2 class="text-2xl font-bold mb-6 text-center">Add Product to Inventory</h2>
+        <form method="post" class="space-y-4">
+            
+            <!-- Inventory_ID Dropdown -->
+            <div>
+                <label class="block text-gray-700">Inventory ID</label>
+                <select name="Inventory_ID" class="form-select mt-1 w-full rounded border-gray-300" required>
+                    <option value="" disabled selected>— choose —</option>
+                    {% for iid in Inventory_IDs %}
+                        <option value="{{ iid }}" {% if request.form.get('Inventory_ID') == iid|string %}selected{% endif %}>
+                            {{ iid }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Company Dropdown -->
+            <div>
+                <label class="block text-gray-700">Company</label>
+                <select name="company" class="form-select mt-1 w-full rounded border-gray-300" required>
+                    <option value="" disabled selected>— choose —</option>
+                    {% for c in companies %}
+                        <option value="{{ c }}" {% if request.form.get('company') == c %}selected{% endif %}>
+                            {{ c }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Description field (datalist: pick or type) -->
+            <div>
+                <label class="block text-gray-700">Description</label>
+                <input list="description_list" name="description" class="form-input mt-1 w-full rounded border-gray-300" 
+                    value="{{ request.form.get('description', '') }}" required>
+                <datalist id="description_list">
+                    {% for d in descriptions %}
+                        <option value="{{ d }}"></option>
+                    {% endfor %}
+                </datalist>
+                <small class="text-gray-400">Choose from list or type a new description.</small>
+            </div>
+
+            <!-- Quantity Field -->
+            <div>
+                <label class="block text-gray-700">Quantity</label>
+                <input type="number" name="quantity" class="form-input mt-1 w-full rounded border-gray-300" required>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                Add Product
+            </button>
+        </form>
+        
+</body>
+</html>

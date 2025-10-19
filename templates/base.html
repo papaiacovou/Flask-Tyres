@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}{{ company_name }} Main Menu{% endblock %}</title>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin:0; padding:0;
+            background: #f8fafb;
+        }
+        .top-menu-bar {
+            background: #efefef;
+            height: 36px;
+            display: flex;
+            align-items: end;
+            padding-left: 6px;
+            border-bottom: 1px solid #d3d3d3;
+            font-family: Segoe UI, Arial, sans-serif;
+            position: relative;
+            z-index: 10;
+            font-size: 0.95em;
+        }
+        .menu-item {
+            position: relative;
+            padding: 0 14px 0 7px;
+            height: 35px;
+            line-height: 35px;
+            cursor: pointer;
+            color: #444;
+            font-size: 0.97em;
+            background: none;
+            border: none;
+            outline: none;
+            transition: background 0.15s;
+        }
+        .menu-item:hover,
+        .menu-item.active {
+            background: #f6f6f8;
+            color: #173a71;
+        }
+        .menu-underline { display: block; height: 2px; background: #264bcc; border-radius: 2px; margin-top: -2px; margin-bottom: 0; width: 85%; margin-left: auto; margin-right: auto; visibility: hidden; }
+        .menu-item.active .menu-underline { visibility: visible; }
+        .menu-dropdown { display: none; position: absolute; top: 36px; left: 0; background: #fff; border: 1px solid #bbb; border-top: none; min-width: 170px; box-shadow: 1px 4px 18px rgba(0,0,0,0.09); z-index: 15;}
+        .menu-dropdown a, .menu-dropdown span.disabled { display: block; padding: 3px 10px; text-decoration: none; color: #222; background: #fff; font-size: 0.88em; line-height: 1.5em; border-bottom: 1px solid #f1f1f1; margin: 0; white-space: nowrap; }
+        .menu-dropdown a:last-child, .menu-dropdown span.disabled:last-child { border-bottom: none;}
+        .menu-dropdown a:hover { background: #e7eafd; color: #1839ae;}
+        .menu-item.active .menu-dropdown { display: block;}
+        .menu-dropdown span.disabled { color: #9b9b9b; background: #f2f2f2; cursor: not-allowed; pointer-events: none;}
+        .top-menu-bar .right-links { margin-left: auto; display: flex; align-items: end; gap: 14px; font-size: 0.98em;}
+        .top-menu-bar .right-links a { text-decoration: none; color: #1839ae; font-weight: 600; margin-left: 4px; margin-right: 4px;}
+        .top-menu-bar .right-links a:hover { text-decoration: underline; color: #173a71;}
+        @media (max-width: 800px) {.top-menu-bar { flex-wrap: wrap; } .menu-item { font-size: 0.93em; padding-right: 10px;}}
+        @media (max-width: 550px) {.menu-dropdown { min-width: 112px; }}
+    </style>
+</head>
+<body>
+    <!-- TOP MENU BAR -->
+    <div class="top-menu-bar">
+        <!-- File menu -->
+        <div class="menu-item" id="fileMenuBtn">
+            File
+            <span class="menu-underline"></span>
+            <div class="menu-dropdown">
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('company_setup') }}">Company Setup</a>
+                    <a href="{{ url_for('backup_db') }}">Backup</a>
+                    <a href="{{ url_for('restore_db') }}">Restore</a>
+                {% else %}
+                    <span class="disabled">Company Setup</span>
+                    <span class="disabled">Backup</span>
+                    <span class="disabled">Restore</span>
+                {% endif %}
+                <a href="#" onclick="window.close();return false;">Exit</a>
+            </div>
+        </div>
+        <!-- Forms menu -->
+        <div class="menu-item" id="formsMenuBtn">
+            Forms
+            <span class="menu-underline"></span>
+            <div class="menu-dropdown">
+                <a href="/invoice">Create Invoice</a>
+                <a href="/quotation">Create Quotation</a>
+                <a href="/create_receipt">Create Invoice Receipt</a>
+            </div>
+        </div>
+        <!-- Customers menu -->
+        <div class="menu-item" id="customersMenuBtn">
+            Customers
+            <span class="menu-underline"></span>
+            <div class="menu-dropdown">
+                <a href="/edit_customers">Add a Customer</a>
+                <a href="/edit_customers">Edit a Customer</a>
+                <a href="#">View Customer Info</a>
+            </div>
+        </div>
+        <!-- Find menu -->
+        <div class="menu-item" id="findMenuBtn">
+            Find
+            <span class="menu-underline"></span>
+            <div class="menu-dropdown">
+                <a href="/find_invoice">Find an Invoice</a>
+                <a href="/find_receipt">Find a Receipt</a>
+                <a href="/find_quotation">Find Quotation</a>
+            </div>
+        </div>
+        <!-- Reports menu -->
+        <div class="menu-item" id="reportsMenuBtn">
+            Reports
+            <span class="menu-underline"></span>
+            <div class="menu-dropdown">
+                {% if current_user.role == 'admin' %}
+                    <a href="/accounts_receivable">Accounts Receivable</a>
+                {% else %}
+                    <span class="disabled">Accounts Receivable</span>
+                {% endif %}
+                <span class="disabled">Accounts Payable</span>
+            </div>
+        </div>
+        <!-- Inventory menu (NEW, after Reports) -->
+        <div class="menu-item" id="inventoryMenuBtn">
+            Inventory
+            <span class="menu-underline"></span>
+            <div class="menu-dropdown">
+                <a href="/add_product">Add Product</a>
+                <a href="/edit_product">Edit Product</a>
+                <a href="/product_inventory">View Products</a>
+            </div>
+        </div>
+        <!-- Users menu -->
+        <div class="menu-item" id="usersMenuBtn">
+            Users
+            <span class="menu-underline"></span>
+            <div class="menu-dropdown">
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('add_user') }}">Add a User</a>
+                    <a href="{{ url_for('list_users') }}">Manage Users</a>
+                    <a href="{{ url_for('list_users') }}">View Existing Users</a>
+                {% else %}
+                    <span class="disabled">Add a User</span>
+                    <span class="disabled">Manage Users</span>
+                    <span class="disabled">View Existing Users</span>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Help menu -->
+        <div class="menu-item" id="helpMenuBtn">
+            Help
+            <span class="menu-underline"></span>
+            <div class="menu-dropdown">
+                <a href="#">About</a>
+                <a href="#">System Documentation</a>
+                <a href="#">Ask a Question</a>
+            </div>
+        </div>
+        <!-- LOGIN/LOGOUT on the far right -->
+        <div class="right-links">
+            {% if current_user %}
+                <span>Logged in as <b>{{ current_user.username }}</b> ({{ current_user.role }})</span>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% block content %}{% endblock %}
+    
+    <script>
+        // Multi-menu open/close
+        document.addEventListener('DOMContentLoaded', function() {
+            function closeAllMenus() {
+                document.querySelectorAll('.menu-item.active').forEach(function(item) {
+                    item.classList.remove('active');
+                });
+            }
+            function setupMenu(btnId) {
+                var btn = document.getElementById(btnId);
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var isActive = btn.classList.contains('active');
+                    closeAllMenus();
+                    if (!isActive) btn.classList.add('active');
+                });
+            }
+            setupMenu('fileMenuBtn');
+            setupMenu('formsMenuBtn');
+            setupMenu('customersMenuBtn');
+            setupMenu('findMenuBtn');
+            setupMenu('reportsMenuBtn');
+            setupMenu('inventoryMenuBtn');
+            setupMenu('usersMenuBtn');
+            setupMenu('helpMenuBtn');
+            document.addEventListener('click', closeAllMenus);
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeAllMenus();
+            });
+        });
+    </script>
+</body>
+</html>

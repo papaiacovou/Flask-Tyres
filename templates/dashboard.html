@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ company_name }} Main Menu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(120deg, #e3eafc 0%, #f8fafb 100%);
+            min-height: 100vh;
+            display: flex;
+        }
+        .sidebar {
+            width: 260px;
+            background: #263238;
+            color: #F8FAFC;
+            height: 100vh;
+            position: fixed;
+            left: 0; top: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            z-index: 2;
+            box-shadow: 2px 0 8px #0002;
+            border-right: 3px solid #23395D;
+            font-family: 'Arial Narrow', Arial, 'Liberation Sans', sans-serif;
+        }
+        .sidebar-title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding-top: 18px;
+            padding-bottom: 8px;
+            background: #12305a;
+            border-bottom: 3px solid #0e223d;
+            box-shadow: 0 2px 7px #10204099, 0 0px 2px #fff3 inset;
+            position: relative;
+        }
+        .sidebar-title {
+            font-size: 1.7em;
+            font-weight: bold;
+            text-align: center;
+            letter-spacing: 1.5px;
+            color: #F8FAFC;
+            user-select: none;
+            font-family: 'Arial Narrow', Arial, 'Liberation Sans', sans-serif;
+            text-shadow: 1px 1px 0 #23395D, 0 2px 10px #0d2347;
+        }
+        .sidebar-fullscreen-btn {
+            background: linear-gradient(90deg, #264a7a 70%, #33588b 100%);
+            border: 1.5px solid #6fa9f7;
+            box-shadow: 0 1px 0 #fff7, 0 1px 7px #0004 inset;
+            color: #e3eafc;
+            border-radius: 7px;
+            padding: 7px 14px;
+            margin-left: 8px;
+            font-size: 1.05em;
+            cursor: pointer;
+            transition: background 0.13s, color 0.13s, box-shadow 0.12s;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .sidebar-fullscreen-btn:hover {
+            background: #1c3960;
+            color: #FFD600;
+            box-shadow: 0 0 0 #0000, 0 2px 12px #1876fa77;
+        }
+        .sidebar-user-info {
+            padding: 0 32px 12px 32px;
+            font-size: 1em;
+            color: #FFD600;
+            line-height: 1.45em;
+            text-align: center;
+            font-family: 'Arial Narrow', Arial, 'Liberation Sans', sans-serif;
+        }
+        .sidebar-user-info a {
+            color: #FFD600;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+        .sidebar-user-info a:hover {
+            color: #fffde7;
+        }
+        .sidebar-nav {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            gap: 0;
+            font-family: 'Arial Narrow', Arial, 'Liberation Sans', sans-serif;
+        }
+
+        /* Section titles (parents) */
+        .sidebar-section-title {
+            color: #F8FAFC;
+            text-decoration: none;
+            font-size: 1.12em;
+            padding: 13px 32px 13px 22px;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            border-left: 4px solid transparent;
+            transition: background 0.16s, color 0.18s;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 600;
+            font-family: 'Arial Narrow', Arial, 'Liberation Sans', sans-serif;
+            position: relative;
+        }
+        .sidebar-section-title:hover {
+            background: #23395D;
+            color: #90caf9;
+            border-left: 4px solid #90caf9;
+        }
+        /* ▼ caret (Font Awesome) that rotates when open */
+        .sidebar-section-title::after {
+            content: "\f0d7"; /* fa-caret-down */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-left: auto;
+            transition: transform .18s ease;
+        }
+        .sidebar-section.open > .sidebar-section-title::after {
+            transform: rotate(180deg); /* points up when open */
+        }
+
+        /* Submenu (dropdown) — hidden by default */
+        .sidebar-submenu {
+            list-style: none;
+            margin: 0;
+            padding: 0 0 0 36px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.22s ease;
+        }
+        /* Reveal submenu when section is open */
+        .sidebar-section.open > .sidebar-submenu {
+            max-height: 700px; /* big enough to accommodate items; adjust if needed */
+        }
+
+        /* Submenu items share same color as main menu */
+        .sidebar-submenu li a,
+        .sidebar-submenu li span {
+            color: #F8FAFC;
+            text-decoration: none;
+            display: block;
+            padding: 9px 0;
+            font-size: 0.95em;
+            transition: color 0.15s, background 0.15s;
+        }
+        .sidebar-submenu li a:hover {
+            color: #90caf9;
+            background: #1c3960;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 14px 24px 20px 32px;
+            font-size: 0.78em;
+            color: #F8FAFC;
+            text-align: center;
+            font-family: 'Arial Narrow', Arial, 'Liberation Sans', sans-serif;
+        }
+        .main-content {
+            margin-left: 260px;
+            width: calc(100vw - 260px);
+            min-height: 100vh;
+            padding: 32px 10px 0 10px;
+            background: linear-gradient(120deg, #f4f8ff 0%, #f8fafb 100%);
+        }
+        .dashboard-center-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 83vh;
+        }
+        .main-menu-company-name {
+            font-size: 2em;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 0.04em;
+            margin-top: 38px;
+            margin-bottom: 12px;
+            font-family: 'Arial Narrow', Arial, 'Liberation Sans', sans-serif;
+            background: linear-gradient(90deg, #1e88e5 15%, #42a5f5 55%, #90caf9 100%);
+            color: #1661b5;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .main-menu-logo {
+            max-width: 480px;
+            width: 95%;
+            height: 240px;
+            object-fit: contain;
+            margin: 8px auto 36px auto;
+            display: block;
+            cursor: pointer;
+            transition: filter 0.13s;
+        }
+        .main-menu-logo:hover {
+            filter: brightness(1.13) drop-shadow(0 1px 14px #1876fa55);
+        }
+        .quick-stats-row {
+            display: flex;
+            gap: 32px;
+            justify-content: center;
+            margin: 14px auto 24px auto;
+            flex-wrap: wrap;
+        }
+        .stat-card-link {
+            display: block;
+            text-decoration: none !important;
+            color: inherit !important;
+            border-radius: 13px;
+            transition: box-shadow 0.14s, transform 0.13s, background 0.12s;
+        }
+        .stat-card-link:hover .stat-card {
+            box-shadow: 0 4px 18px #1876fa24;
+            background: #e3f1fc;
+            transform: translateY(-2px) scale(1.03);
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 13px;
+            box-shadow: 0 2px 12px #0001;
+            padding: 18px 40px;
+            min-width: 190px;
+            text-align: center;
+            font-size: 1.13em;
+            transition: box-shadow 0.14s, background 0.13s, transform 0.12s;
+        }
+        .stat-title {
+            color: #2a3552;
+            font-weight: 500;
+            font-size: 1.08em;
+            margin-bottom: 4px;
+            opacity: 0.92;
+        }
+        .stat-value {
+            color: #163567;
+            font-weight: bold;
+            font-size: 2em;
+            letter-spacing: 0.5px;
+            margin-top: 3px;
+        }
+        @media (max-width: 900px) {
+            .sidebar { width: 53px; }
+            .sidebar-footer, .sidebar-section-title span, .sidebar-submenu, .sidebar-user-info, .sidebar-title-container { display: none; }
+            .main-content { margin-left: 53px; width: calc(100vw - 53px);}
+        }
+        @media (max-width: 600px) {
+            .quick-stats-row { gap: 12px;}
+            .stat-card { padding: 11px 8px; min-width: 100px; font-size: 0.95em;}
+            .main-menu-company-name { font-size: 1.2em; margin-top: 12px;}
+            .main-menu-logo { max-width: 140px; height: 70px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-title-container">
+            <span class="sidebar-title">Main Menu</span>
+            <button class="sidebar-fullscreen-btn" onclick="toggleFullScreen()" title="Toggle Full Screen">
+                <i class="fa fa-expand" id="fullscreen-icon"></i>
+            </button>
+        </div>
+        <ul class="sidebar-nav">
+            <!-- File Menu -->
+            <li class="sidebar-section">
+                <a href="#" class="sidebar-section-title"><i class="fa fa-folder"></i> <span>File</span></a>
+                <ul class="sidebar-submenu">
+                    {% if current_user.role == 'admin' %}
+                        <li><a href="{{ url_for('company_setup') }}">Company Setup</a></li>
+                        <li><a href="{{ url_for('backup_db') }}">Backup</a></li>
+                        <li><a href="{{ url_for('restore_db') }}">Restore</a></li>
+                    {% else %}
+                        <li><span class="disabled">Company Setup</span></li>
+                        <li><span class="disabled">Backup</span></li>
+                        <li><span class="disabled">Restore</span></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('logout') }}" onclick="logoutAndClose(event);">Exit</a></li>
+                </ul>
+            </li>
+            <!-- Forms Menu -->
+            <li class="sidebar-section">
+                <a href="#" class="sidebar-section-title"><i class="fa fa-clipboard-list"></i> <span>Forms</span></a>
+                <ul class="sidebar-submenu">
+                    <li><a href="/invoice">Create Invoice</a></li>
+                    <li><a href="/quotation">Create Quotation</a></li>
+                    <li><a href="/create_receipt">Create Invoice Receipt</a></li>
+                </ul>
+            </li>
+            <!-- Customers Menu -->
+            <li class="sidebar-section">
+                <a href="#" class="sidebar-section-title"><i class="fa fa-users"></i> <span>Customers</span></a>
+                <ul class="sidebar-submenu">
+                    <li><a href="/edit_customers">Add a Customer</a></li>
+                    <li><a href="/edit_customers">Edit a Customer</a></li>
+                    <li><a href="/edit_customers">View Customer Info</a></li>
+                </ul>
+            </li>
+            <!-- Find Menu -->
+            <li class="sidebar-section">
+                <a href="#" class="sidebar-section-title"><i class="fa fa-search"></i> <span>Find</span></a>
+                <ul class="sidebar-submenu">
+                    <li><a href="/find_invoice">Find an Invoice</a></li>
+                    <li><a href="/find_receipt">Find a Receipt</a></li>
+                    <li><a href="/find_quotation">Find Quotation</a></li>
+                </ul>
+            </li>
+            <!-- Reports Menu -->
+            <li class="sidebar-section">
+                <a href="#" class="sidebar-section-title"><i class="fa fa-chart-bar"></i> <span>Reports</span></a>
+                <ul class="sidebar-submenu">
+                    {% if current_user.role == 'admin' %}
+                        <li><a href="/accounts_receivable">Accounts Receivable</a></li>
+                    {% else %}
+                        <li><span class="disabled">Accounts Receivable</span></li>
+                    {% endif %}  
+                    <li><span class="disabled">Accounts Payable</span></li>
+                    <li><a href="{{ url_for('ap_ocr') }}">Add AP from Invoice Scan</a></li>
+                    <li><a href="{{ url_for('accounts_payable') }}">Accounts Payable Scan</a></li>
+
+                </ul>
+            </li>
+            
+            <!-- Inventory Menu -->
+            <li class="sidebar-section">
+                <a href="#" class="sidebar-section-title"><i class="fa fa-boxes-stacked"></i> <span>Inventory</span></a>
+                <ul class="sidebar-submenu">
+                    <li><a href="/add_new_product">Add New Product</a></li>
+                    <li><a href="/add_product">Add Product</a></li>
+                    <li><a href="/product_inventory">Edit Product</a></li>
+                    <li><a href="/product_inventory">View Products</a></li>
+                    
+
+                </ul>
+            </li>
+
+             <!-- Supplier Menu -->
+            <li class="sidebar-section">
+                <a href="#" class="sidebar-section-title"><i class="fa fa-boxes-stacked"></i> <span>Suppliers</span></a>
+                <ul class="sidebar-submenu">
+                    <li><a href="/suppliers">Add a Supplier</a></li>
+                    <li><a href="/suppliers_list">Suppliers List</a></li>
+               <!-- <li><a href="/product_inventory">Edit Product</a></li> -->
+               <!-- <li><a href="/product_inventory">View Products</a></li> -->
+                </ul>
+            </li>
+
+
+
+            <!-- Visual Trends Menu -->
+            <li class="sidebar-section">
+                <a href="#" class="sidebar-section-title">
+                    <i class="fa fa-chart-line"></i>
+                    <span>Visual Trends</span>
+                </a>
+                <ul class="sidebar-submenu">
+                    <li><a href="/visual_trends/revenue">Bar/Pie Chart: Revenue (Month/Customer/Product)</a></li>
+                    <li><a href="/visual_trends/payments">Payment Trends (Paid vs Unpaid Over Time)</a></li>
+                </ul>
+            </li>
+            <!-- Users Menu -->
+            <!-- Users Menu -->
+<li class="sidebar-section">
+    <a href="#" class="sidebar-section-title"><i class="fa fa-user-cog"></i> <span>Users</span></a>
+    <ul class="sidebar-submenu">
+        {% if current_user.role == 'admin' %}
+            <li><a href="{{ url_for('add_user') }}">Add a User</a></li>
+            <li><a href="{{ url_for('users') }}">Manage Users</a></li>
+            <li><a href="{{ url_for('users') }}">View Existing Users</a></li>
+            <li><a href="{{ url_for('login_sessions') }}">Login Session</a></li>
+        {% else %}
+            <li><span class="disabled">Add a User</span></li>
+            <li><span class="disabled">Manage Users</span></li>
+            <li><span class="disabled">View Existing Users</span></li>
+            <li><span class="disabled">Login Sessions</span></li>
+        {% endif %}
+        <li><a href="{{ url_for('change_password') }}">Change Password</a></li>
+    </ul>
+</li>
+
+            <!-- Help Menu -->
+            <li class="sidebar-section">
+                <a href="#" class="sidebar-section-title"><i class="fa fa-question-circle"></i> <span>Help</span></a>
+                <ul class="sidebar-submenu">
+                    <li><a href="about_us">About Us</a></li>
+                    <li><a href="documentation">Documentation</a></li>
+                    <li><a href="#">Ask a Question</a></li>
+                    <li><a href="/support">Support</a></li>
+                </ul>
+            </li>
+        </ul>
+        <div class="sidebar-user-info">
+            Logged in as <b>{{ current_user.username }}</b> ({{ current_user.role }})<br>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+        <div class="sidebar-footer">
+            Copyright &copy; 2020 by {{ company_name }}
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="dashboard-center-content">
+            <a href="http://www.gpbs-inc.com/" target="_blank" rel="noopener" style="text-decoration: none;">
+                <div class="main-menu-company-name">{{ company_name }}</div>
+            </a>
+            <a href="http://www.gpbs-inc.com/" target="_blank" rel="noopener">
+                <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" class="main-menu-logo">
+            </a>
+            <div class="quick-stats-row">
+                <a class="stat-card-link" href="{{ url_for('accounts_receivable') }}?this_month=1" title="View this month's invoices">
+                    <div class="stat-card">
+                        <div class="stat-title">Invoices This Month</div>
+                        <div class="stat-value">{{ invoices_this_month or 0 }}</div>
+                        <div style="font-size:0.9em; color:#7b8798;">View this month's invoices</div>
+                    </div>
+                </a>
+                <a class="stat-card-link" href="{{ url_for('accounts_receivable') }}?filter=unpaid" title="See all unpaid invoices">
+                    <div class="stat-card">
+                        <div class="stat-title">Outstanding Payments</div>
+                        <div class="stat-value">€{{ "{:,.2f}".format(outstanding_payments or 0) }}</div>
+                        <div style="font-size:0.9em; color:#7b8798;">See all unpaid invoices</div>
+                    </div>
+                </a>
+                <a class="stat-card-link" href="{{ url_for('edit_customers') }}" title="Customer List">
+                    <div class="stat-card">
+                        <div class="stat-title">Customers</div>
+                        <div class="stat-value">{{ customer_count or 0 }}</div>
+                        <div style="font-size:0.9em; color:#7b8798;">Customer List</div>
+                    </div>
+                </a>
+                <a class="stat-card-link" href="{{ url_for('product_inventory') }}?filter=low_stock" title="Check low stock items">
+                    <div class="stat-card">
+                        <div class="stat-title">Low Inventory Alerts</div>
+                        <div class="stat-value">{{ low_inventory_count or 0 }}</div>
+                        <div style="font-size:0.9em; color:#7b8798;">Check low stock items</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    <script>
+    // Dropdown toggling (already present; works with the CSS above)
+    document.querySelectorAll('.sidebar-section-title').forEach(function(section){
+        section.addEventListener('click', function(e){
+            e.preventDefault();
+            var parent = section.parentElement;
+            var alreadyOpen = parent.classList.contains('open');
+            document.querySelectorAll('.sidebar-section.open').forEach(function(openSection){
+                openSection.classList.remove('open');
+            });
+            if(!alreadyOpen) parent.classList.add('open');
+        });
+    });
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    document.addEventListener("fullscreenchange", function() {
+        var icon = document.getElementById('fullscreen-icon');
+        if(document.fullscreenElement) {
+            icon.classList.remove('fa-expand');
+            icon.classList.add('fa-compress');
+        } else {
+            icon.classList.remove('fa-compress');
+            icon.classList.add('fa-expand');
+        }
+    });
+
+    function logoutAndClose(e) {
+        e.preventDefault();
+        fetch("{{ url_for('logout') }}", {credentials: 'same-origin'})
+          .then(function() {
+              setTimeout(function() {
+                  window.close();
+                  window.location.href = "{{ url_for('logout') }}";
+              }, 350);
+          });
+    }
+    </script>
+</body>
+</html>

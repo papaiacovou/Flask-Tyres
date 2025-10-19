@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Payment Trends</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  {% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+  <h2>Payment Trends</h2>
+
+  <div style="max-width: 800px;">
+    <canvas id="barPayments"></canvas>
+  </div>
+
+  <script>
+    const barData = {{ payment_trends_data|tojson }};
+
+    new Chart(document.getElementById('barPayments'), {
+      type: 'bar',
+      data: {
+        labels: barData.labels,
+        datasets: [{
+          label: 'Amount by Status',
+          data: barData.data,
+          backgroundColor: [
+            '#60a5fa', // blue for PAID
+            '#facc15', // yellow for UNPAID
+            '#ef4444', // red for VOID
+            '#22c55e', // green for PARTIAL (optional)
+          ].slice(0, barData.labels.length)
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+  </script>
+</body>
+</html>

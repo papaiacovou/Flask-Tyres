@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add New Product</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Sticky top menu -->
+    {% include 'menu.html' %}
+    <!-- Optional: Back to Dashboard link just below menu -->
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+    <!-- Main content with enough top margin to clear the menu -->
+    <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg mt-20 mx-auto">
+        <h2 class="text-2xl font-bold mb-6 text-center">Add New Product to Inventory</h2>
+        <form method="post" class="space-y-4">
+            <!-- Inventory ID -->
+            <div>
+                <label class="block text-gray-700">Inventory ID</label>
+                <input type="text" name="Inventory_ID" class="form-input mt-1 w-full rounded border-gray-300" required
+                       value="{{ request.form.get('Inventory_ID', '') }}">
+            </div>
+            <!-- Company -->
+            <div>
+                <label class="block text-gray-700">Company</label>
+                <input type="text" name="company" class="form-input mt-1 w-full rounded border-gray-300" required
+                       value="{{ request.form.get('company', '') }}">
+            </div>
+            <!-- Description -->
+            <div>
+                <label class="block text-gray-700">Description</label>
+                <input type="text" name="description" class="form-input mt-1 w-full rounded border-gray-300" required
+                       value="{{ request.form.get('description', '') }}">
+            </div>
+            <!-- Unit price -->
+            <div>
+                <label class="block text-gray-700">Unit price (€)</label>
+                <input type="number" step="0.01" min="0" name="unit_price" class="form-input mt-1 w-full rounded border-gray-300" required
+                       value="{{ request.form.get('unit_price', '') }}">
+            </div>
+            <!-- Quantity in stock -->
+            <div>
+                <label class="block text-gray-700">Quantity in stock</label>
+                <input type="number" min="0" name="quantity_in_stock" class="form-input mt-1 w-full rounded border-gray-300" required
+                       value="{{ request.form.get('quantity_in_stock', '') }}">
+            </div>
+            <!-- Inventory value (readonly, auto-calculated) -->
+            <div>
+                <label class="block text-gray-700">Inventory value (€)</label>
+                <input type="number" step="0.01" min="0" name="inventory_value" id="inventory_value"
+                       class="form-input mt-1 w-full rounded border-gray-300 bg-gray-100" readonly
+                       value="{{ request.form.get('inventory_value', '') }}">
+            </div>
+            <!-- Reorder level -->
+            <div>
+                <label class="block text-gray-700">Reorder level</label>
+                <input type="number" min="0" name="reorder_level" class="form-input mt-1 w-full rounded border-gray-300"
+                       value="{{ request.form.get('reorder_level', '') }}">
+            </div>
+            <!-- Reorder time in days -->
+            <div>
+                <label class="block text-gray-700">Reorder time in days</label>
+                <input type="number" min="0" name="reorder_time_in_days" class="form-input mt-1 w-full rounded border-gray-300"
+                       value="{{ request.form.get('reorder_time_in_days', '') }}">
+            </div>
+            <!-- Quantity in reorder -->
+            <div>
+                <label class="block text-gray-700">Quantity in reorder</label>
+                <input type="number" min="0" name="quantity_in_reorder" class="form-input mt-1 w-full rounded border-gray-300"
+                       value="{{ request.form.get('quantity_in_reorder', '') }}">
+            </div>
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                Add Product
+            </button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mt-4">
+              {% for category, message in messages %}
+                <div class="p-2 rounded mb-2 bg-green-100 text-green-800">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Auto-calculate inventory value -->
+    <script>
+      function updateInventoryValue() {
+        let price = parseFloat(document.getElementsByName('unit_price')[0].value) || 0;
+        let qty = parseInt(document.getElementsByName('quantity_in_stock')[0].value) || 0;
+        document.getElementById('inventory_value').value = (price * qty).toFixed(2);
+      }
+      document.getElementsByName('unit_price')[0].addEventListener('input', updateInventoryValue);
+      document.getElementsByName('quantity_in_stock')[0].addEventListener('input', updateInventoryValue);
+      // initialize value on page load
+      window.onload = updateInventoryValue;
+    </script>
+</body>
+</html>

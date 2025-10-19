@@ -1,0 +1,12 @@
+Users Restrictions
+
+Grey out when login as user
+
+File
+Export
+Restore
+
+Customers
+edit a Customer
+
+Users grey out the whole menu

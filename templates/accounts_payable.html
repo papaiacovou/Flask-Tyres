@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Accounts Payable Entry</title>
+    <style>
+        body { background: #f5f6fa; font-family: Arial, sans-serif; }
+        .ap-form-wrapper {
+            max-width: 540px; margin: 44px auto; background: #fff;
+            padding: 36px 30px 30px 30px; border-radius: 15px; box-shadow: 0 8px 38px #0001;
+        }
+        h2 { text-align: center; margin-bottom: 25px; color: #215cca; letter-spacing: 0.5px;}
+        label { display: block; margin-top: 18px; margin-bottom: 6px; font-weight: bold; }
+        input, select, textarea {
+            width: 100%; padding: 10px; border: 1px solid #bfc3cf; border-radius: 7px;
+            font-size: 1em; margin-bottom: 10px; box-sizing: border-box;
+            background: #f9f9fb; transition: border 0.15s;
+        }
+        input:focus, select:focus, textarea:focus { border: 1.5px solid #215cca; outline: none; background: #fff; }
+        button {
+            margin-top: 18px; padding: 12px 0; width: 100%;
+            background: #215cca; color: #fff; font-size: 1.1em; font-weight: 600;
+            border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px #0002;
+            letter-spacing: 0.5px; transition: background 0.18s;
+        }
+        button:hover { background: #163a7c; }
+        .form-row { display: flex; gap: 16px; }
+        .form-row > div { flex: 1; }
+        .note { font-size: 0.95em; color: #566; margin-top: -7px; }
+        .ocr-box { margin:20px 0; background:#f6f8fa; border-radius:7px; padding:14px; font-size:0.96em; color:#466; }
+        @media (max-width: 600px) {
+            .ap-form-wrapper { padding: 18px 6vw; }
+            .form-row { flex-direction: column; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+
+<div class="ap-form-wrapper">
+    <h2>Accounts Payable Entry</h2>
+    <form method="POST" action="{{ url_for('accounts_payable_add') }}">
+        <label for="invoice_number">Invoice Number</label>
+        <input type="text" id="invoice_number" name="invoice_number" value="{{ invoice_number or '' }}" maxlength="30" required>
+
+        <label for="vendor_name">Vendor Name</label>
+        <input type="text" id="vendor_name" name="vendor_name" value="{{ vendor_name or '' }}" maxlength="60" required>
+
+        <div class="form-row">
+            <div>
+                <label for="invoice_date">Invoice Date</label>
+                <input type="date" id="invoice_date" name="invoice_date" value="{{ invoice_date or '' }}" required>
+            </div>
+            <div>
+                <label for="due_date">Due Date</label>
+                <input type="date" id="due_date" name="due_date" value="{{ due_date or '' }}">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label for="amount">Amount</label>
+                <input type="number" id="amount" name="amount" value="{{ amount or '' }}" step="0.01" min="0" required>
+            </div>
+            <div>
+                <label for="currency">Currency</label>
+                <select id="currency" name="currency" required>
+                    <option value="EUR" {% if currency=='EUR' %}selected{% endif %}>EUR (€)</option>
+                    <option value="USD" {% if currency=='USD' %}selected{% endif %}>USD ($)</option>
+                    <option value="GBP" {% if currency=='GBP' %}selected{% endif %}>GBP (£)</option>
+                </select>
+            </div>
+        </div>
+
+        <label for="payment_status">Payment Status</label>
+        <select id="payment_status" name="payment_status" required>
+            <option value="Unpaid" {% if payment_status=='Unpaid' %}selected{% endif %}>Unpaid</option>
+            <option value="Paid" {% if payment_status=='Paid' %}selected{% endif %}>Paid</option>
+            <option value="Partially Paid" {% if payment_status=='Partially Paid' %}selected{% endif %}>Partially Paid</option>
+            <option value="Overdue" {% if payment_status=='Overdue' %}selected{% endif %}>Overdue</option>
+        </select>
+
+        <label for="notes">Notes <span class="note">(Optional)</span></label>
+        <textarea id="notes" name="notes" rows="3">{{ notes or '' }}</textarea>
+
+        <button type="submit">Save Accounts Payable</button>
+    </form>
+
+    {% if ocr_text %}
+    <div class="ocr-box">
+        <b>Extracted OCR Text (debug/demo):</b><br>
+        <pre>{{ ocr_text }}</pre>
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Quotation {{ quotation_number }}</title>
+<style>
+  :root{
+    --border:#c9ced6;
+    --muted:#6b7280;
+    --ink:#111827;
+    --bg:#ffffff;
+    --stripe:#f7f9fc;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family: Arial, sans-serif;
+    color: var(--ink);
+    margin: 28px;
+    background: var(--bg);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .companyblock { margin-bottom: 18px; }
+  .companyblock h2{ margin:0 0 6px 0; font-size:1.4rem; }
+  .companyblock p{ margin:.15rem 0; line-height:1.35; color:var(--muted); }
+  .header{
+    display:flex; gap:24px; align-items:flex-start; justify-content:space-between;
+    border-bottom: 2px solid var(--border); padding-bottom:12px; margin-bottom:16px;
+  }
+  .meta{ width: 46%; }
+  .kv{ width:100%; border-collapse: collapse; }
+  .kv th, .kv td{ border:1px solid var(--border); padding:8px 10px; text-align:left; }
+  .kv th{ width:40%; background:#eef2f7; }
+  .billto{ margin-top:8px; }
+  .billto .box{
+    border:1px solid var(--border); padding:10px; border-radius:6px; background:#fbfcff;
+    line-height:1.45;
+  }
+
+  table.items{ width:100%; border-collapse:collapse; margin-top:18px; }
+  table.items th, table.items td{ border:1px solid #000; padding:8px 10px; text-align:center; }
+  table.items th{ background-color:#ccc; }
+
+  .totals{
+    margin-top:18px; display:flex; justify-content:flex-end;
+  }
+  .totals table{
+    border-collapse:collapse; min-width: 320px;
+  }
+  .totals th, .totals td{
+    border:1px solid var(--border); padding:8px 12px; text-align:right;
+  }
+  .totals th{ background:#eef2f7; text-align:left; }
+  .grand{ font-weight:bold; font-size:1.05rem; }
+
+  .notes{
+    margin-top:18px; font-size:.92rem; color:var(--muted);
+    border-top:1px dashed var(--border); padding-top:10px;
+  }
+  .void-watermark{
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    display: none;
+  }
+  .void-watermark span{
+    position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%) rotate(-20deg);
+    font-size: 120px; font-weight: 800; color: rgba(200,0,0,.12); letter-spacing: 6px;
+  }
+  .is-void .void-watermark{ display:block; }
+  @media print{
+    body{ margin: 18mm; }
+    a{ color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body class="{% if void or paid_status=='VOID' %}is-void{% endif %}">
+  <div class="void-watermark"><span>VOID</span></div>
+
+  <!-- COMPANY INFO BLOCK at the very top -->
+  <div class="companyblock">
+    <h2>{{ company.company_name }}</h2>
+    <p>
+      {% if company.address %}{{ company.address }}<br/>{% endif %}
+      {% if company.city or company.postal %}
+        {{ company.city }}{% if company.city and company.postal %}, {% endif %}{{ company.postal }}<br/>
+      {% endif %}
+      {% if company.country %}{{ company.country }}<br/>{% endif %}
+      {% if company.phone %}{{ company.phone }}<br/>{% endif %}
+      {% if company.email %}{{ company.email }}<br/>{% endif %}
+      {% if company.vat %}VAT: {{ company.vat }}<br/>{% endif %}
+    </p>
+  </div>
+
+  <!-- Header with meta/table/billto only -->
+  <div class="header">
+    <div class="meta">
+      <table class="kv">
+        <tr>
+          <th>Quotation Number</th>
+          <td>{{ quotation_number }}</td>
+        </tr>
+        <tr>
+          <th>Quotation  Date</th>
+          <td>{{ today }}</td>
+        </tr>
+        <tr>
+          <th>Due Date</th>
+          <td>{{ due_date }}</td>
+        </tr>
+      </table>
+      <div class="billto">
+        <div style="font-weight:700; margin:8px 0 6px;">Bill To</div>
+        <div class="box">
+          {% set lines = bill_to.split('\n') %}
+          {% for line in lines %}
+            {{ line }}<br/>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Line items -->
+  <table class="items">
+    <thead>
+      <tr>
+        <th style="width:18%">Product</th>
+        <th>Description</th>
+        <th style="width:9%">Units</th>
+        <th style="width:12%">Price</th>
+        <th style="width:12%">Discount</th>
+        <th style="width:14%">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.product }}</td>
+        <td style="text-align:left">{{ item.description }}</td>
+        <td>{{ item.units }}</td>
+        <td>€ {{ "%.2f"|format(item.price) }}</td>
+        <td>€ {{ "%.2f"|format(item.discount) }}</td>
+        <td>€ {{ "%.2f"|format(item.subtotal) }}</td>
+      </tr>
+      {% endfor %}
+      {% if not items or items|length == 0 %}
+      <tr><td colspan="6" style="color:#9aa0a6;">No items.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <!-- Totals -->
+  <div class="totals">
+    <table>
+      <tr>
+        <th>Subtotal</th>
+        <td>€ {{ "%.2f"|format(subtotal) }}</td>
+      </tr>
+      <tr>
+        <th>VAT</th>
+        <td>€ {{ "%.2f"|format(vat) }}</td>
+      </tr>
+      <tr class="grand">
+        <th>Total</th>
+        <td>€ {{ "%.2f"|format(total) }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Notes / Terms (only ONCE, after totals) -->
+  <div class="notes">
+    <div><strong>Payment terms:</strong> Net 30 days unless stated otherwise.</div>
+    <div>Please include the quotation number <strong>{{ quotation_number }}</strong> with your payment.</div>
+    {% if company.bank_name or company.iban or company.swift %}
+      <div>
+        Bank transfer to
+        {% if company.bank_name %}<strong>{{ company.bank_name }}</strong>{% endif %}
+        {% if company.iban %}&middot; IBAN: <strong>{{ company.iban }}</strong>{% endif %}
+        {% if company.swift %}&middot; SWIFT: <strong>{{ company.swift }}</strong>{% endif %}.
+      </div>
+    {% endif %}
+    <div>Thank you for your business.</div>
+  </div>
+</body>
+</html>

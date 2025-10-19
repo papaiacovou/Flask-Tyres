@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Technical Support | {{ company_name or "Your Company" }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(130deg, #e5f0fb 0%, #f8fafc 100%);}
+        .support-card { box-shadow: 0 4px 32px #0001; border-radius: 24px; background: #fff; max-width: 440px; margin: 54px auto; padding: 46px 32px 34px 32px; position: relative;}
+        .support-logo { display: block; max-width: 94px; margin: 0 auto 15px auto; filter: drop-shadow(0 3px 8px #17446b11);}
+        .support-title { font-size: 2rem; font-weight: 700; text-align: center; color: #17446b; margin-bottom: 6px;}
+        .support-company { text-align: center; font-weight: 600; font-size: 1.06em; color: #3a5ba0; letter-spacing: 1px; margin-bottom: 19px;}
+        .support-desc { text-align: center; color: #40627b; font-size: 1em; margin-bottom: 22px;}
+        .support-label { font-size: 1.05em; font-weight: 600; color: #1a3350; margin-bottom: 7px; display: block;}
+        .support-input, .support-textarea { border: 1.5px solid #b3bed7; background: #f5f8fd; border-radius: 8px; padding: 10px 13px; font-size: 1.03em; width: 100%; margin-bottom: 17px; outline: none; transition: border 0.18s, background 0.15s;}
+        .support-input:focus, .support-textarea:focus { border-color: #3576ea; background: #eef6ff;}
+        .support-textarea { min-height: 95px; resize: vertical;}
+        .support-btn { background: linear-gradient(90deg, #184b80 0%, #3576ea 100%); color: #fff; border: none; border-radius: 10px; width: 100%; font-size: 1.2em; font-weight: 700; padding: 13px 0 12px 0; margin-top: 6px; box-shadow: 0 2px 8px #184b8022; transition: background 0.16s, box-shadow 0.14s; cursor: pointer; letter-spacing: 1px;}
+        .support-btn:hover { background: linear-gradient(90deg, #3576ea 0%, #184b80 100%); box-shadow: 0 3px 14px #184b8044;}
+        .support-success, .support-error { margin: 15px 0 0 0; font-size: 1.07em; text-align: center; border-radius: 8px; padding: 10px;}
+        .support-success { background: #e9fbe8; color: #227e4d; border: 1px solid #b0edc6;}
+        .support-error { background: #ffeaea; color: #a4162b; border: 1px solid #ffcbcb;}
+        @media (max-width: 600px) {.support-card { padding: 22px 7vw 23px 7vw; max-width: 99vw; } .support-title { font-size: 1.28em;}}
+    </style>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+<div class="support-card" role="form" aria-labelledby="supportTitle">
+    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Company Logo" class="support-logo" />
+    <div id="supportTitle" class="support-title">Technical Support</div>
+    <div class="support-company">{{ company_name or "Your Company Name" }}</div>
+    <div class="support-desc">
+        Please describe your issue in detail and we’ll get back to you as soon as possible.<br>
+        <span style="font-size: 0.99em; color: #6e93b2;">All support requests are confidential.</span>
+    </div>
+
+    <!-- Show flashed messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="support-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" autocomplete="off" aria-describedby="supportTitle">
+        <label class="support-label" for="email">Your Email <span aria-hidden="true" style="color:#e03a3a">*</span></label>
+        <input class="support-input" type="email" id="email" name="email" autocomplete="email" placeholder="e.g. user@example.com" required
+            value="{{ request.form.get('email', '') }}" aria-required="true" aria-label="Your Email">
+
+        <label class="support-label" for="subject">Subject <span aria-hidden="true" style="color:#e03a3a">*</span></label>
+        <input class="support-input" type="text" id="subject" name="subject" maxlength="128" placeholder="e.g. Cannot login to system" required
+            value="{{ request.form.get('subject', '') }}" aria-required="true" aria-label="Subject">
+
+        <label class="support-label" for="problem">Describe the Problem <span aria-hidden="true" style="color:#e03a3a">*</span></label>
+        <textarea class="support-textarea" id="problem" name="problem" placeholder="Type your problem or question here..." required aria-required="true" aria-label="Describe the Problem">{{ request.form.get('problem', '') }}</textarea>
+
+        <!-- CAPTCHA math question -->
+        <label class="support-label" for="captcha">
+            Prove you are human: What is {{ num1 }} + {{ num2 }}? <span aria-hidden="true" style="color:#e03a3a">*</span>
+        </label>
+        <input class="support-input" type="text" id="captcha" name="captcha_answer" required
+            autocomplete="off" placeholder="Enter the sum">
+        <input type="hidden" name="captcha_sum" value="{{ captcha_sum }}">
+
+        <button class="support-btn" type="submit">Send Support Request</button>
+    </form>
+</div>
+</body>
+</html>

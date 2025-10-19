@@ -1,0 +1,387 @@
+<!-- templates/menu.html -->
+<style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; }
+    .top-menu-bar {
+        background: #efefef;
+        height: 36px;
+        display: flex;
+        align-items: end;
+        padding-left: 6px;
+        border-bottom: 1px solid #d3d3d3;
+        font-family: Segoe UI, Arial, sans-serif;
+        position: relative;
+        z-index: 10;
+        font-size: 1em;
+    }
+
+    /* --- Back to Main Menu icon/link --- */
+    .back-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 35px;
+      line-height: 35px;
+      padding: 0 10px;
+      margin-right: 10px;
+      color: #173a71;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+      user-select: none;
+    }
+    .back-main i {
+      font-size: 14px;
+    }
+    .back-main:hover {
+      background: #f6f6f8;
+      color: #0f2a53;
+    }
+    .back-main:focus-visible {
+      outline: 2px solid #264bcc;
+      outline-offset: 2px;
+    }
+    @media (max-width: 700px) {
+      .back-main .label { display: none; }
+      .back-main { padding: 0 8px; }
+    }
+
+    .menu-item {
+        position: relative;
+        padding: 0 14px 0 7px;
+        height: 35px;
+        line-height: 35px;
+        cursor: pointer;
+        color: #444;
+        font-size: 0.97em;
+        background: none;
+        border: none;
+        outline: none;
+        transition: background 0.15s;
+    }
+    .menu-item:hover,
+    .menu-item.active {
+        background: #f6f6f8;
+        color: #173a71;
+    }
+    .menu-underline {
+        display: block;
+        height: 2px;
+        background: #264bcc;
+        border-radius: 2px;
+        margin-top: -2px;
+        margin-bottom: 0;
+        width: 85%;
+        margin-left: auto;
+        margin-right: auto;
+        visibility: hidden;
+    }
+    .menu-item.active .menu-underline {
+        visibility: visible;
+    }
+    .menu-dropdown {
+        display: none;
+        position: absolute;
+        top: 36px;
+        left: 0;
+        background: #fff;
+        border: 1px solid #bbb;
+        border-top: none;
+        min-width: 170px;
+        box-shadow: 1px 4px 18px rgba(0,0,0,0.09);
+        z-index: 15;
+    }
+    .menu-dropdown a,
+    .menu-dropdown span.disabled {
+        display: block;
+        padding: 3px 10px;
+        text-decoration: none;
+        color: #222;
+        background: #fff;
+        font-size: 0.88em;
+        line-height: 1.5em;
+        border-bottom: 1px solid #f1f1f1;
+        margin: 0;
+        white-space: nowrap;
+    }
+    .menu-dropdown a:last-child,
+    .menu-dropdown span.disabled:last-child {
+        border-bottom: none;
+    }
+    .menu-dropdown a:hover {
+        background: #e7eafd;
+        color: #1839ae;
+    }
+    .menu-item.active .menu-dropdown {
+        display: block;
+    }
+    .menu-dropdown span.disabled {
+        color: #9b9b9b;
+        background: #f2f2f2;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .top-menu-bar .right-links {
+        margin-left: auto;
+        display: flex;
+        align-items: end;
+        gap: 14px;
+        font-size: 0.98em;
+    }
+    .top-menu-bar .right-links a {
+        text-decoration: none;
+        color: #1839ae;
+        font-weight: 600;
+        margin-left: 4px;
+        margin-right: 4px;
+    }
+    .top-menu-bar .right-links a:hover {
+        text-decoration: underline;
+        color: #173a71;
+    }
+    /* --- Fullscreen Button Styles --- */
+    .fullscreen-menu-btn {
+        margin-left: 10px;
+        background: #193a54;
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        padding: 4px 13px 4px 10px;
+        font-size: 1em;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        cursor: pointer;
+        height: 27px;
+        box-shadow: 0 2px 8px #0001;
+        transition: background 0.18s;
+        outline: none;
+    }
+    .fullscreen-menu-btn:active {
+        background: #173a71;
+    }
+    @media (max-width: 800px) {
+        .top-menu-bar { flex-wrap: wrap; }
+        .menu-item { font-size: 0.93em; padding-right: 10px;}
+        .fullscreen-menu-btn { font-size: 0.93em; padding: 3px 8px 3px 7px;}
+    }
+    @media (max-width: 550px) {
+        .menu-dropdown { min-width: 112px; }
+        .fullscreen-menu-btn { font-size: 0.91em; padding: 2px 6px 2px 4px;}
+    }
+</style>
+<div class="top-menu-bar">
+    <!-- Back to Main Menu icon -->
+    <a href="{{ url_for('dashboard') }}" class="back-main" title="Back to Main Menu" aria-label="Back to Main Menu">
+  <i class="fa-solid fa-arrow-left-long"></i>
+  <span class="label">Main Menu</span>
+</a>
+
+
+    <!-- File menu -->
+    <div class="menu-item" id="fileMenuBtn">
+        File
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('company_setup') }}">Company Setup</a>
+                <a href="{{ url_for('backup_db') }}">Backup</a>
+                <a href="{{ url_for('restore_db') }}">Restore</a>
+            {% else %}
+                <span class="disabled">Company Setup</span>
+                <span class="disabled">Backup</span>
+                <span class="disabled">Restore</span>
+            {% endif %}
+            <a href="#" onclick="window.close();return false;">Exit</a>
+        </div>
+    </div>
+    <!-- Forms menu -->
+    <div class="menu-item" id="formsMenuBtn">
+        Forms
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            <a href="/invoice">Create Invoice</a>
+            <a href="/quotation">Create Quotation</a>
+            <a href="/create_receipt">Create Invoice Receipt</a>
+        </div>
+    </div>
+    <!-- Customers menu -->
+    <div class="menu-item" id="customersMenuBtn">
+        Customers
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            <a href="/edit_customers">Add a Customer</a>
+            <a href="/edit_customers">Edit a Customer</a>
+            <a href="/edit_customers">View Customer Info</a>
+        </div>
+    </div>
+    <!-- Find menu -->
+    <div class="menu-item" id="findMenuBtn">
+        Find
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            <a href="/find_invoice">Find an Invoice</a>
+            <a href="/find_receipt">Find a Receipt</a>
+            <a href="/find_quotation">Find Quotation</a>
+        </div>
+    </div>
+    <!-- Reports menu -->
+    <div class="menu-item" id="reportsMenuBtn">
+        Reports
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            {% if current_user.role == 'admin' %}
+                <a href="/accounts_receivable">Accounts Receivable</a>
+            {% else %}
+                <span class="disabled">Accounts Receivable</span>
+            {% endif %}
+            <span class="disabled">Accounts Payable</span>
+        </div>
+    </div>
+    <!-- Inventory menu -->
+    <div class="menu-item" id="inventoryMenuBtn">
+        Inventory
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            <a href="/add_new_product">Add New Product</a>
+            <a href="/add_product">Add Product</a>
+            <a href="/product_inventory">Edit Product</a>
+            <a href="/product_inventory">View Products</a>
+        </div>
+    </div>
+
+    <!-- Suppliers menu -->
+    <div class="menu-item" id="suppliersMenuBtn">
+        Suppliers
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            <a href="/suppliers">Add a Supplier</a>
+            <a href="/suppliers_list">View/Edit Supplier </a>
+        </div>
+    </div>
+
+    <!-- Visual Trends menu -->
+    <div class="menu-item" id="visualTrendsMenuBtn">
+        Visual Trends
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            <a href="/visual_trends/revenue">Revenue Trends</a>
+            <a href="/visual_trends/payments">Payment Trends</a>
+        </div>
+    </div>
+    <!-- Users menu -->
+    <div class="menu-item" id="usersMenuBtn">
+        Users
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('add_user') }}">Add a User</a>
+                <a href="{{ url_for('users') }}">Manage Users</a>
+                <a href="{{ url_for('users') }}">View Existing Users</a>
+                <a href="{{ url_for('login_sessions') }}">Login Session</a>
+            {% else %}
+                <span class="disabled">Add a User</span>
+                <span class="disabled">Manage Users</span>
+                <span class="disabled">View Existing Users</span>
+                <span class="disabled">Login Session</span>
+            {% endif %}
+                <a href="{{ url_for('change_password') }}">Change Password</a>
+        </div>
+    </div>
+    <!-- Help menu with About Us and Support -->
+    <div class="menu-item" id="helpMenuBtn">
+        Help
+        <span class="menu-underline"></span>
+        <div class="menu-dropdown">
+            <a href="{{ url_for('about_us') }}">About Us</a>
+            <a href="{{ url_for('documentation') }}">System Documentation</a>
+            <a href="#">Ask a Question</a>
+            <a href="{{ url_for('support') }}">Support</a>
+        </div>
+    </div>
+    <!-- LOGIN/LOGOUT and FULLSCREEN BUTTON on the far right -->
+    <div class="right-links">
+        <!-- Fullscreen Button Start -->
+        <button id="fullscreen-menu-btn" class="fullscreen-menu-btn">
+            <i class="fa-solid fa-expand"></i>
+            <span id="fullscreen-menu-btn-label">Full Screen</span>
+        </button>
+        <!-- Fullscreen Button End -->
+        {% if current_user %}
+            <span>Logged in as <b>{{ current_user.username }}</b> ({{ current_user.role }})</span>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+        {% endif %}
+    </div>
+</div>
+<script>
+    // Multi-menu open/close
+    document.addEventListener('DOMContentLoaded', function() {
+        function closeAllMenus() {
+            document.querySelectorAll('.menu-item.active').forEach(function(item) {
+                item.classList.remove('active');
+            });
+        }
+        function setupMenu(btnId) {
+            var btn = document.getElementById(btnId);
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var isActive = btn.classList.contains('active');
+                closeAllMenus();
+                if (!isActive) btn.classList.add('active');
+            });
+        }
+        setupMenu('fileMenuBtn');
+        setupMenu('formsMenuBtn');
+        setupMenu('customersMenuBtn');
+        setupMenu('findMenuBtn');
+        setupMenu('reportsMenuBtn');
+        setupMenu('inventoryMenuBtn');
+        setupMenu('suppliersMenuBtn');
+        setupMenu('visualTrendsMenuBtn');
+        setupMenu('usersMenuBtn');
+        setupMenu('helpMenuBtn');
+        document.addEventListener('click', closeAllMenus);
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeAllMenus();
+        });
+
+        // --- Full Screen Button Logic ---
+        const fsMenuBtn = document.getElementById('fullscreen-menu-btn');
+        const fsMenuLabel = document.getElementById('fullscreen-menu-btn-label');
+        let isFs = false;
+
+        function toggleFullScreenMenu() {
+            if (!isFs) {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+        fsMenuBtn.addEventListener('click', toggleFullScreenMenu);
+
+        document.addEventListener('fullscreenchange', () => {
+            isFs = !!document.fullscreenElement;
+            if (isFs) {
+                fsMenuBtn.querySelector('i').className = "fa-solid fa-compress";
+                fsMenuLabel.textContent = "Normal Screen";
+            } else {
+                fsMenuBtn.querySelector('i').className = "fa-solid fa-expand";
+                fsMenuLabel.textContent = "Full Screen";
+            }
+        });
+    });
+</script>

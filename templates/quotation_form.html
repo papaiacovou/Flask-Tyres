@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Quotation</title>
+  <style>
+    /* Page base + soft background */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f7f9fc;
+    }
+
+    /* Centered page title */
+    .page-title {
+      text-align: center;
+      margin: 16px 0 24px;
+      font-weight: 600;
+    }
+
+    /* Card-style quotation form */
+    .quotation-form {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .top-section { display: flex; justify-content: space-between; gap: 2%; }
+    .box { width: 48%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+    th, td { border: 1px solid #000; padding: 6px 10px; text-align: center; }
+    th { background-color: #ccc; }
+    .summary { margin-top: 20px; float: right; text-align: right; }
+    button { margin-top: 15px; }
+    .small-note { font-size: 0.88em; color: #666; }
+    .meta-row { margin-bottom: 12px; }
+    input[readonly] { background: #f7f9fc; }
+
+    /* --- Tooltip for quantity in stock --- */
+    .stock-tooltip {
+      pointer-events: none;
+      transition: opacity 0.18s;
+      position: absolute;
+      background: #fffbe7;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      padding: 7px 13px;
+      font-size: 0.92em;
+      color: #222;
+      z-index: 10;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.09);
+    }
+
+    /* ====== COMPANY/BANK INFO BORDER STYLE ====== */
+    .company-info-box, .bank-info-box {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      background: #fafbfc;
+      max-width: 340px;
+    }
+  </style>
+</head>
+<body>
+  {% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+  <h2 class="page-title">Create Quotation</h2>
+
+  <form method="POST" class="quotation-form">
+    <div class="top-section">
+      <div class="box">
+        <div style="margin-bottom:18px;">
+          <!-- COMPANY INFO BOX ADDED -->
+          <div class="company-info-box">
+            <div style="font-size:1em; font-weight:bold; margin-bottom:6px;">
+            {{ company.company_name }}
+            </div>
+            {% if company.address %}{{ company.address }}<br>{% endif %}
+            {% if company.city or company.postal %}
+              {{ company.city }}{% if company.city and company.postal %}, {% endif %}{{ company.postal }}<br>
+            {% endif %}
+            {% if company.country %}{{ company.country }}<br>{% endif %}
+            {% if company.phone %}{{ company.phone }}<br>{% endif %}
+            {% if company.email %}{{ company.email }}<br>{% endif %}
+            {% if company.vat %}VAT: {{ company.vat }}<br>{% endif %}
+          </div>
+          {% if company.bank_name or company.account_number or company.iban or company.swift %}
+            <div style="margin-top:12px; font-weight:bold;">Bank Info</div>
+            <div class="bank-info-box" style="margin-bottom:10px;">
+              {% if company.bank_name %}<strong>{{ company.bank_name }}</strong><br>{% endif %}
+              {% if company.account_number %}Account: {{ company.account_number }}<br>{% endif %}
+              {% if company.iban %}IBAN: {{ company.iban }}<br>{% endif %}
+              {% if company.swift %}SWIFT: {{ company.swift }}<br>{% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="box">
+        <div class="meta-row">
+          <label><strong>Quotation Number:</strong><br>
+            <input type="text" name="quotation_number" value="{{ quotation_number or '' }}" readonly style="width: 120px; background: #f7f9fc;">
+          </label>
+        </div>
+        <div class="meta-row">
+          <label><strong>Date:</strong><br>
+            <input type="text" name="quotation_date" value="{{ today or '' }}" readonly style="width: 120px; background: #f7f9fc;">
+          </label>
+        </div>
+        <label><strong>Company Name:</strong><br>
+          <input type="text" name="bill_to_line1" id="companyName" list="customerList" autocomplete="off" required value="{{ request.form.get('bill_to_line1', '') }}">
+          <datalist id="customerList"></datalist><br>
+        </label>
+        <label><strong>Street Address:</strong><br>
+          <input type="text" name="bill_to_line2" value="{{ request.form.get('bill_to_line2', '') }}"><br>
+        </label>
+        <label><strong>City / Postal Code:</strong><br>
+          <input type="text" name="bill_to_line3" value="{{ request.form.get('bill_to_line3', '') }}"><br>
+        </label>
+        <label><strong>Phone:</strong><br>
+          <input type="text" name="bill_to_line4" value="{{ request.form.get('bill_to_line4', '') }}"><br>
+        </label>
+        <label><strong>Email:</strong><br>
+          <input type="email" name="bill_to_line5" value="{{ request.form.get('bill_to_line5', '') }}"><br>
+        </label>
+        <br>
+        <label><strong>Due Date:</strong><br>
+          <input type="date" name="due_date" required value="{{ request.form.get('due_date', '') }}">
+        </label>
+      </div>
+    </div>
+
+    <table id="itemsTable">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Description</th>
+          <th>Units</th>
+          <th>Price</th>
+          <th>Discount</th>
+          <th>Subtotal</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <select class="prod-type" onchange="onTypeChange(this)">
+              <option value="tyres">Tyres</option>
+              <option value="services">Services</option>
+            </select>
+            <br>
+            <select name="product" class="prod-item" required></select>
+          </td>
+          <td class="desc-cell"></td>
+          <td><input type="number" name="units" step="1" min="1" value="1" required oninput="calculateSubtotal()"></td>
+          <td><input type="number" name="price" step="0.01" required oninput="calculateSubtotal()"></td>
+          <td><input type="number" name="discount" step="0.01" value="0" required oninput="calculateSubtotal()"></td>
+          <td><span class="line-subtotal">€ 0.00</span></td>
+          <td><button type="button" onclick="removeRow(this)">Remove</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <button type="button" onclick="addRow()">+ Add Item</button>
+
+    <div class="summary">
+      <p>
+        <strong>Subtotal:</strong> <span id="liveSubtotal">€ 0.00</span><br>
+        <strong>VAT (19%):</strong> <span id="liveVAT">€ 0.00</span><br>
+        <strong>Total:</strong> <span id="liveTotal">€ 0.00</span>
+      </p>
+    </div>
+
+    <br style="clear: both;"><br>
+    <button type="submit" name="action" value="download">Generate Quotation</button>
+    <button type="submit" name="action" value="print">Generate &amp; Print</button>
+    <button type="submit" name="action" value="send">Generate &amp; Send</button>
+  </form>
+
+  <!-- script unchanged! -->
+  <script>
+    // --- Tooltip helpers ---
+    function showTooltip(el, message) {
+      let tooltip = document.createElement('div');
+      tooltip.className = 'stock-tooltip';
+      tooltip.textContent = message;
+      document.body.appendChild(tooltip);
+      const rect = el.getBoundingClientRect();
+      tooltip.style.left = (rect.left + window.scrollX + el.offsetWidth + 8) + 'px';
+      tooltip.style.top = (rect.top + window.scrollY - 5) + 'px';
+      el._tooltip = tooltip;
+    }
+    function hideTooltip(el) {
+      if (el._tooltip) {
+        el._tooltip.remove();
+        el._tooltip = null;
+      }
+    }
+    function attachStockHover(row) {
+      const unitsInput = row.querySelector('input[name="units"]');
+      const prodSelect = row.querySelector('select.prod-item');
+      if (!unitsInput || !prodSelect) return;
+
+      unitsInput.addEventListener('mouseenter', function() {
+        // Find the description field (select or input) inside desc-cell in this row
+        const descCell = row.querySelector('.desc-cell');
+        let descField = null;
+        if (descCell) {
+          descField = descCell.querySelector('select[name="description"], input[name="description"]');
+        }
+        const inventoryId = prodSelect.value;
+        const description = descField ? descField.value : "";
+        if (!inventoryId || !description) {
+          showTooltip(unitsInput, 'Select product and size first.');
+          return;
+        }
+        fetch(`/get_stock_quantity?inventory_id=${encodeURIComponent(inventoryId)}&description=${encodeURIComponent(description)}`)
+          .then(r => r.json())
+          .then(obj => {
+            showTooltip(unitsInput, `Available: ${obj.quantity}`);
+          });
+      });
+
+      unitsInput.addEventListener('mouseleave', function() {
+        hideTooltip(unitsInput);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load all customer names into the datalist
+      fetch('/get_customers')
+        .then(res => res.json())
+        .then(names => {
+          const list = document.getElementById('customerList');
+          list.innerHTML = '';
+          names.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            list.appendChild(option);
+          });
+        });
+
+      const companyInput = document.getElementById('companyName');
+      companyInput.addEventListener('change', function() {
+        const name = this.value.trim();
+        if (!name) return;
+        fetch(`/get_customer_details?name=${encodeURIComponent(name)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.company_name) {
+              document.querySelector('input[name="bill_to_line1"]').value = data.company_name;
+              document.querySelector('input[name="bill_to_line2"]').value = data.address;
+              document.querySelector('input[name="bill_to_line3"]').value = data.city_postal;
+              document.querySelector('input[name="bill_to_line4"]').value = data.phone;
+              document.querySelector('input[name="bill_to_line5"]').value = data.email;
+            } else {
+              alert("This company is not in your database. Please fill in details and it will be added.");
+              document.querySelector('input[name="bill_to_line2"]').value = '';
+              document.querySelector('input[name="bill_to_line3"]').value = '';
+              document.querySelector('input[name="bill_to_line4"]').value = '';
+              document.querySelector('input[name="bill_to_line5"]').value = '';
+            }
+          });
+      });
+    });
+
+    // ------- PRICING/TOTALS HELPERS -------
+    function calculateSubtotal() {
+      const rows = document.getElementById("itemsTable").getElementsByTagName('tbody')[0].rows;
+      let subtotal = 0;
+      for (let row of rows) {
+        const qty = parseFloat(row.cells[2].querySelector('input[name="units"]').value) || 0;
+        const price = parseFloat(row.cells[3].querySelector('input[name="price"]').value) || 0;
+        const discount = parseFloat(row.cells[4].querySelector('input[name="discount"]').value) || 0;
+        const lineSubtotal = Math.max(qty * price - discount, 0);
+        row.cells[5].querySelector('span').textContent = "€ " + lineSubtotal.toFixed(2);
+        subtotal += lineSubtotal;
+      }
+      const vat = subtotal * 0.19;
+      const total = subtotal + vat;
+      document.getElementById("liveSubtotal").textContent = "€ " + subtotal.toFixed(2);
+      document.getElementById("liveVAT").textContent = "€ " + vat.toFixed(2);
+      document.getElementById("liveTotal").textContent = "€ " + total.toFixed(2);
+    }
+
+    function removeRow(button) {
+      const row = button.parentNode.parentNode;
+      row.parentNode.removeChild(row);
+      calculateSubtotal();
+    }
+
+    // ------- PRODUCTS/SIZES -------
+    function fillProductItems(selectEl, type) {
+      selectEl.innerHTML = '';
+      const blank = document.createElement('option');
+      blank.value = '';
+      blank.textContent = '-- Select --';
+      selectEl.appendChild(blank);
+
+      if (type === 'tyres') {
+        fetch('/get_inventory_ids').then(r => r.json()).then(ids => {
+          (ids || []).forEach(id => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = id;
+            selectEl.appendChild(opt);
+          });
+        });
+      } else if (type === 'services') {
+        fetch('/get_products?type=services').then(r => r.json()).then(services => {
+          (services || []).forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            selectEl.appendChild(opt);
+          });
+        });
+      }
+    }
+
+    function makeDescriptionControl(row, type) {
+      const cell = row.querySelector('.desc-cell');
+      if (!cell) return;
+      cell.innerHTML = '';
+
+      if (type === 'tyres') {
+        const sel = document.createElement('select');
+        sel.name = 'description';
+        sel.required = true;
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = '-- Select Size --';
+        sel.appendChild(blank);
+
+        // Get the Inventory ID selected for this row
+        const prodSel = row.querySelector('select.prod-item');
+        const inventoryId = prodSel && prodSel.value;
+        if (inventoryId) {
+          fetch(`/get_sizes_for_inventory_id?inventory_id=${encodeURIComponent(inventoryId)}`)
+            .then(r => r.json())
+            .then(sizes => {
+              (sizes || []).forEach(sz => {
+                const opt = document.createElement('option');
+                opt.value = sz;
+                opt.textContent = sz;
+                sel.appendChild(opt);
+              });
+            });
+        }
+        // Update sizes when Inventory ID changes
+        if (prodSel) {
+          prodSel.onchange = function() {
+            sel.innerHTML = '';
+            const blank2 = document.createElement('option');
+            blank2.value = '';
+            blank2.textContent = '-- Select Size --';
+            sel.appendChild(blank2);
+            if (this.value) {
+              fetch(`/get_sizes_for_inventory_id?inventory_id=${encodeURIComponent(this.value)}`)
+                .then(r => r.json())
+                .then(sizes => {
+                  (sizes || []).forEach(sz => {
+                    const opt = document.createElement('option');
+                    opt.value = sz;
+                    opt.textContent = sz;
+                    sel.appendChild(opt);
+                  });
+                });
+            }
+          }
+        }
+        cell.appendChild(sel);
+        const note = document.createElement('div');
+        note.className = 'small-note';
+        note.textContent = 'Sizes shown from Inventory table.';
+        cell.appendChild(note);
+      } else {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.name = 'description';
+        inp.required = true;
+        cell.appendChild(inp);
+      }
+    }
+
+    async function onTypeChange(typeSelect) {
+      const row = typeSelect.closest('tr');
+      const itemSelect = row.querySelector('select.prod-item');
+      const newType = typeSelect.value;
+      fillProductItems(itemSelect, newType);
+      makeDescriptionControl(row, newType);
+      // When changing type, clear product & description values
+      if (itemSelect) itemSelect.value = '';
+      if (row.querySelector('[name="description"]')) row.querySelector('[name="description"]').value = '';
+    }
+
+    async function initRow(row) {
+      const typeSel = row.querySelector('select.prod-type');
+      const itemSel = row.querySelector('select.prod-item');
+      const type = (typeSel && typeSel.value) || 'tyres';
+      if (typeSel && itemSel) {
+        fillProductItems(itemSel, type);
+        makeDescriptionControl(row, type);
+      }
+      attachStockHover(row); // <-- Tooltip on units hover
+    }
+
+    function buildRowHtml() {
+      return `
+        <td>
+          <select class="prod-type" onchange="onTypeChange(this)">
+            <option value="tyres">Tyres</option>
+            <option value="services">Services</option>
+          </select>
+          <br>
+          <select name="product" class="prod-item" required></select>
+        </td>
+        <td class="desc-cell"></td>
+        <td><input type="number" name="units" step="1" min="1" value="1" required oninput="calculateSubtotal()"></td>
+        <td><input type="number" name="price" step="0.01" required oninput="calculateSubtotal()"></td>
+        <td><input type="number" name="discount" step="0.01" value="0" required oninput="calculateSubtotal()"></td>
+        <td><span class="line-subtotal">€ 0.00</span></td>
+        <td><button type="button" onclick="removeRow(this)">Remove</button></td>
+      `;
+    }
+
+    async function addRow() {
+      const tbody = document.getElementById("itemsTable").getElementsByTagName('tbody')[0];
+      const newRow = tbody.insertRow();
+      newRow.innerHTML = buildRowHtml();
+      await initRow(newRow);
+    }
+
+    window.onload = async function () {
+      calculateSubtotal();
+      const dueDateInput = document.querySelector('input[name="due_date"]');
+      if (dueDateInput && !dueDateInput.value) {
+        const today = new Date();
+        today.setDate(today.getDate() + 30);
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dueDateInput.value = `${yyyy}-${mm}-${dd}`;
+      }
+
+      // initialize first (existing) row
+      const firstRow = document.querySelector('#itemsTable tbody tr');
+      if (firstRow) {
+        firstRow.cells[0].innerHTML = `
+          <select class="prod-type" onchange="onTypeChange(this)">
+            <option value="tyres">Tyres</option>
+            <option value="services">Services</option>
+          </select>
+          <br>
+          <select name="product" class="prod-item" required></select>
+        `;
+        firstRow.cells[1].classList.add('desc-cell');
+        firstRow.cells[1].innerHTML = '';
+        await initRow(firstRow);
+      }
+    };
+  </script>
+</body>
+</html>

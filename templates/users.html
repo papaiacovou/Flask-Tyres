@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Management</title>
+    <style>
+        .btn-action {
+            display: inline-block;
+            padding: 6px 14px;
+            margin: 0 2px;
+            font-size: 0.96em;
+            font-family: inherit;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-add {
+            background: #56b44c;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 0.99em;
+            padding: 7px 16px;
+        }
+        .btn-add:hover { background: #388e3c; }
+        .btn-edit {
+            background: #2196f3;
+            color: #fff;
+        }
+        .btn-edit:hover { background: #1976d2; }
+        .btn-deactivate {
+            background: #ffc107;
+            color: #222;
+        }
+        .btn-deactivate:hover { background: #ffb300; }
+        .btn-activate {
+            background: #aed581;
+            color: #1b5e20;
+        }
+        .btn-activate:hover { background: #689f38; }
+        .btn-delete {
+            background: #f44336;
+            color: #fff;
+        }
+        .btn-delete:hover { background: #c62828; }
+        table {
+            border-collapse: collapse;
+            width: 85%;
+            margin: 16px auto 0 auto;
+            background: #fafbfc;
+        }
+        th, td {
+            padding: 10px 15px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background: #f5f6fa;
+            font-size: 1.08em;
+        }
+        h2 {
+            text-align: center;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f4f6fc;
+        }
+        .actions-row { display: flex; justify-content: center; align-items: center; gap: 6px;}
+    </style>
+</head>
+<body>
+ {% include 'menu.html' %} 
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+        <h2>User Management</h2>
+    <div style="text-align:center; margin-bottom:12px;">
+        <!-- Add User Button -->
+        <form action="{{ url_for('add_user') }}" method="GET" style="display:inline;">
+            <button type="submit" class="btn-action btn-add">Add User</button>
+        </form>
+    </div>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Department</th>    <!-- Department column added -->
+            <th>Role</th>
+            <th>Created At</th>
+            <th>Actions</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user['id'] }}</td>
+            <td>{{ user['username'] }}</td>
+            <td>{{ user['first_name'] }}</td>
+            <td>{{ user['last_name'] }}</td>
+            <td>{{ user['department'] }}</td>    <!-- Show department -->
+            <td>{{ user['role'] }}</td>
+            <td>{{ user['created_at'] }}</td>
+            <td>
+                <div class="actions-row">
+                    <!-- Edit User -->
+                    <form action="{{ url_for('edit_user', user_id=user['id']) }}" method="GET" style="display:inline;">
+                        <button type="submit" class="btn-action btn-edit">Edit User</button>
+                    </form>
+                    <!-- Deactivate/Activate -->
+                    <form action="{{ url_for('deactivate_user', user_id=user['id']) }}" method="POST" style="display:inline;">
+                        {% if user['active'] %}
+                            <button type="submit" class="btn-action btn-deactivate"
+                                onclick="return confirm('Deactivate this user?');">
+                                Deactivate
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn-action btn-activate"
+                                onclick="return confirm('Activate this user?');">
+                                Activate
+                            </button>
+                        {% endif %}
+                    </form>
+                    <!-- Delete -->
+                    <form action="{{ url_for('delete_user', username=user['username']) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn-action btn-delete"
+                            onclick="return confirm('Are you sure you want to delete user {{ user['username'] }}?');">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

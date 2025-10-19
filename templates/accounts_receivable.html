@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Accounts Receivable</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0 32px; background: #f8f8f8; }
+    .header { background: #888; color: #fff; text-align: center; font-size: 2.3em; padding: .7em 0; margin-bottom: 1.2em; }
+    .flashes { margin: 12px 0; padding: 0; list-style: none; }
+    .flash { padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; border:1px solid #cfd6df; background:#fff; }
+    .flash.success{border-color:#6dcf8f;background:#ebfff1}
+    .flash.warning{border-color:#f2c06b;background:#fff7e9}
+    .flash.error{border-color:#e38b8b;background:#ffefef}
+    .flash.info{border-color:#89b1f3;background:#eef5ff}
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 0 0 14px 0; }
+    .stat { background: #fff; border: 1px solid #cfd6df; border-radius: 10px; padding: 12px 16px; box-shadow: 0 2px 6px #0001; }
+    .stat h4 { margin: 0 0 6px 0; font-size: 0.95em; color: #667; text-transform: uppercase; letter-spacing: .4px; }
+    .stat .value { font-size: 1.25em; font-weight: bold; color: #222; }
+    .muted { color: #6b7280; }
+    table { border-collapse: collapse; width: 100%; background: #fff; }
+    th, td { border: 1px solid #bbb; padding: 10px 14px; text-align: center; }
+    th { background: #eee; }
+    tr:hover { background: #f3f8fc; }
+    .clickable-invoice { color: #2579e7; cursor: pointer; text-decoration: underline; }
+    .row-void { background: #fafafa !important; color: #9aa0a6; }
+    .row-void td { text-decoration: line-through; }
+    .badge-void { display:inline-block; padding:3px 8px; border-radius: 999px; background:#ffe6e6; color:#b40000; font-weight:600; }
+    .actions { display:flex; gap:8px; justify-content:center; }
+    .btn { padding:6px 10px; border-radius:6px; border:1px solid #cfd6df; background:#fff; cursor:pointer; }
+    .btn:hover { background:#f6f9ff; }
+    .btn-danger { border-color:#f1b2b2; background:#ffefef; }
+    .btn-danger:hover { background:#ffe2e2; }
+    .btn:disabled { opacity:.45; cursor:not-allowed; }
+    .modal-bg { display: none; position: fixed; z-index: 2000; inset: 0; background: rgba(0,0,0,.18); justify-content: center; align-items: center; }
+    .modal-box { background: #fff; padding: 1.4em; border-radius: 12px; min-width: 420px; max-width: 95vw; max-height: 85vh; overflow: auto; box-shadow: 0 10px 30px #0003; }
+    .modal-close { float: right; font-size: 1.6em; color: #444; cursor: pointer; margin: -6px -6px 0 0; }
+    .modal-table { width: 100%; border-collapse: collapse; margin-top: .6em; }
+    .modal-table th, .modal-table td { border: 1px solid #bbb; padding: 6px 10px; text-align: center; }
+    .empty { color:#c33; font-size:1.1em; text-align:center; padding:.6em 0; }
+    .paid-status-filter-row { margin-bottom: 10px; display: flex; align-items: center; gap: 10px; font-size: 1.12em; }
+    .paid-status-filter-row label { font-weight: bold; color: #555; }
+    .paid-status-filter-row select { padding: 4px 11px; font-size: 1em; border-radius: 6px; border: 1px solid #bbc; background: #f6f9ff; }
+    .sort-arrow { font-size: 1em; color: #666; margin-left: 3px; }
+  </style>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+
+
+  <div class="header">Accounts Receivable</div>
+
+  <!-- Paid Status Filter -->
+  <div class="paid-status-filter-row">
+    <label for="paidStatusFilter">Paid Status:</label>
+    <select id="paidStatusFilter" onchange="filterPaidStatus()">
+      <option value="ALL">All</option>
+      <option value="PAID">Paid</option>
+      <option value="UNPAID">Unpaid</option>
+      <option value="PARTIAL">Partial</option>
+      <option value="VOID">Void</option>
+    </select>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="stats" id="summaryStats">
+    <div class="stat" id="statTotalAmount">
+      <h4>Total Amount</h4>
+      <div class="value" id="totalAmountValue">€ {{ "%.2f"|format(total_amount_sum or 0) }}</div>
+      <div style="color:#555; font-size:1em; font-weight:normal; margin-top:2px;">
+        Total VAT: <span id="totalVATValue">€ {{ "%.2f"|format(total_vat_sum or 0) }}</span>
+      </div>
+    </div>
+    <div class="stat" id="statCurrentBalance">
+      <h4>Current Balance</h4>
+      <div class="value" id="currentBalanceValue">€ {{ "%.2f"|format(current_balance_sum or 0) }}</div>
+    </div>
+    <div class="stat" id="statPaidStatus">
+      <h4>Paid Status</h4>
+      <div class="value">
+        UNPAID: <span id="unpaidCount">{{ unpaid_count or 0 }}</span>
+        <span class="muted">|</span>
+        PARTIAL: <span id="partialCount">{{ partial_count or 0 }}</span>
+        <span class="muted">|</span>
+        PAID: <span id="paidCount">{{ paid_count or 0 }}</span>
+      </div>
+    </div>
+    <div class="stat" id="statVoided">
+      <h4>Voided</h4>
+      <div class="value" id="voidCount">{{ void_count or 0 }}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Invoice Number</th>
+        <th>Invoice Date <span class="sort-arrow">&#9660;</span></th>
+        <th>Due Date</th>
+        <th>Company Name</th>
+        <th>Phone</th>
+        <th>Product</th>
+        <th>Description</th>
+        <th>Units</th>
+        <th>Price</th>
+        <th>Discount</th>
+        <th>Subtotal</th>
+        <th>VAT</th>
+        <th>Total Amount</th>
+        <th>Current Balance</th>
+        <th>Paid Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in receivables %}
+      <tr class="{% if r['paid_status']=='VOID' or r['voided'] %}row-void{% endif %}">
+        <td>{{ r['id'] }}</td>
+        <td>
+          <span class="clickable-invoice" onclick="showReceiptsModal('{{ r['invoice_number'] }}')">
+            {{ r['invoice_number'] }}
+          </span>
+        </td>
+        <td>{{ r['invoice_date'] }}</td>
+        <td>{{ r['due_date'] }}</td>
+        <td>{{ r['company_name'] }}</td>
+        <td>{{ r['phone'] or '' }}</td>
+        <td>{{ r['product'] or '' }}</td>
+        <td>{{ r['description'] or '' }}</td>
+        <td>{{ r['units'] or '' }}</td>
+        <td>{{ r['price'] or '' }}</td>
+        <td>{{ r['discount'] or '' }}</td>
+        <td>{{ r['subtotal'] or '' }}</td>
+        <td>{{ r['vat'] or '' }}</td>
+        <td>€ {{ "%.2f"|format(r['total_amount'] or 0) }}</td>
+        <td>€ {{ "%.2f"|format(r['current_balance'] or 0) }}</td>
+        <td>
+          {{ r['paid_status'] }}
+          {% if r['paid_status']=='VOID' or r['voided'] %}
+            <span class="badge-void">VOID</span>
+          {% endif %}
+        </td>
+        <td class="actions">
+          <a class="btn" href="{{ url_for('view_invoice', invoice_number=r['invoice_number']) }}" target="_blank">View PDF</a>
+          <button
+            class="btn btn-danger"
+            onclick="confirmVoid('{{ r['invoice_number'] }}')"
+            {% if r['paid_status']!='UNPAID' or r['voided'] %}disabled{% endif %}>
+            Void
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="17" class="empty">No records found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Hidden form for void -->
+  <form id="voidForm" method="POST" action="{{ url_for('void_invoice_route') }}" style="display:none;">
+    <input type="hidden" name="invoice_number" id="voidInvoiceNumber">
+    <input type="hidden" name="reason" id="voidReason">
+  </form>
+
+  <!-- Modal -->
+  <div id="modalBg" class="modal-bg" onclick="closeModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <span class="modal-close" onclick="closeModal(event)">&times;</span>
+      <div id="modalContent"><div style="text-align:center; color:#888;">Loading...</div></div>
+    </div>
+  </div>
+
+  <script>
+    function filterPaidStatus() {
+      var select = document.getElementById('paidStatusFilter');
+      var filter = select.value;
+      var table = document.querySelector('table');
+      var trs = table.querySelectorAll('tbody tr');
+      let totalAmount = 0, totalVAT = 0, currentBalance = 0;
+      let unpaid = 0, partial = 0, paid = 0, voided = 0;
+
+      trs.forEach(function(row) {
+        // Only filter data rows
+        if (row.querySelectorAll('td').length < 17) return;
+        var statusCell = row.cells[15];
+        if (!statusCell) return;
+        var status = statusCell.textContent.trim().toUpperCase();
+
+        // Hide/show rows based on filter
+        let show = false;
+        if (filter === 'ALL') show = true;
+        else if (filter === 'VOID') show = status.includes('VOID');
+        else show = (status === filter);
+
+        row.style.display = show ? '' : 'none';
+
+        // If row is shown, update stats
+        if (show) {
+          let total = parseFloat(row.cells[13].textContent.replace(/[^\d\.\-]/g, "")) || 0;
+          let vat = parseFloat(row.cells[12].textContent.replace(/[^\d\.\-]/g, "")) || 0;
+          let balance = parseFloat(row.cells[14].textContent.replace(/[^\d\.\-]/g, "")) || 0;
+          totalAmount += total;
+          totalVAT += vat;
+          currentBalance += balance;
+          if (status.includes('VOID')) voided++;
+          else if (status === 'UNPAID') unpaid++;
+          else if (status === 'PARTIAL') partial++;
+          else if (status === 'PAID') paid++;
+        }
+      });
+
+      // Update summary stats for totals
+      document.getElementById('totalAmountValue').textContent = "€ " + totalAmount.toFixed(2);
+      document.getElementById('totalVATValue').textContent = "€ " + totalVAT.toFixed(2);
+      document.getElementById('currentBalanceValue').textContent = "€ " + currentBalance.toFixed(2);
+
+      // Hide/Show Paid Status & Voided stats
+      document.getElementById('statPaidStatus').style.display = (filter === 'ALL') ? '' : 'none';
+      document.getElementById('statVoided').style.display = (filter === 'ALL') ? '' : 'none';
+
+      // Update counts
+      if (filter === 'ALL') {
+        document.getElementById('unpaidCount').textContent = "{{ unpaid_count or 0 }}";
+        document.getElementById('partialCount').textContent = "{{ partial_count or 0 }}";
+        document.getElementById('paidCount').textContent = "{{ paid_count or 0 }}";
+        document.getElementById('voidCount').textContent = "{{ void_count or 0 }}";
+      } else {
+        document.getElementById('unpaidCount').textContent = unpaid;
+        document.getElementById('partialCount').textContent = partial;
+        document.getElementById('paidCount').textContent = paid;
+        document.getElementById('voidCount').textContent = voided;
+      }
+    }
+
+    function confirmVoid(inv) {
+      if (!inv) return;
+      const sure = confirm(`Void invoice ${inv}? This action cannot be undone and is blocked if payments exist.`);
+      if (!sure) return;
+      const reason = prompt("Reason for void (optional):", "");
+      document.getElementById('voidInvoiceNumber').value = inv;
+      document.getElementById('voidReason').value = reason || '';
+      document.getElementById('voidForm').submit();
+    }
+
+    function showReceiptsModal(invoiceNumber) {
+      const bg = document.getElementById('modalBg');
+      const content = document.getElementById('modalContent');
+      bg.style.display = 'flex';
+      content.innerHTML = `<div style="text-align:center; color:#888;">Loading...</div>`;
+
+      fetch('/get_receipts_for_invoice?invoice_number=' + encodeURIComponent(invoiceNumber))
+        .then(r => r.json())
+        .then(list => {
+          if (!list.length) {
+            content.innerHTML =
+              `<div class="empty">No receipts found for invoice <b>${invoiceNumber}</b></div>`;
+            return;
+          }
+          const rows = list.map(r => `
+            <tr>
+              <td>${r.receipt_number ?? ''}</td>
+              <td>${r.date ?? ''}</td>
+              <td>€ ${(parseFloat(r.amount_paid||0)).toFixed(2)}</td>
+              <td>${r.method ?? ''}</td>
+              <td>${r.check_number ?? ''}</td>
+              <td>${r.bank ?? ''}</td>
+            </tr>`).join('');
+
+          content.innerHTML = `
+            <div style="font-size:1.1em; font-weight:bold; margin-bottom:.4em;">
+              Receipts for Invoice <span style="color:#2579e7;">${invoiceNumber}</span>
+            </div>
+            <table class="modal-table">
+              <thead>
+                <tr>
+                  <th>Receipt No</th>
+                  <th>Date</th>
+                  <th>Amount Paid</th>
+                  <th>Method</th>
+                  <th>Check Number</th>
+                  <th>Bank</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>`;
+        })
+        .catch(() => {
+          content.innerHTML = `<div class="empty">Could not load receipts.</div>`;
+        });
+    }
+
+    function closeModal() {
+      document.getElementById('modalBg').style.display = 'none';
+    }
+
+    window.onload = function() {
+      filterPaidStatus();
+    };
+  </script>
+</body>
+</html>

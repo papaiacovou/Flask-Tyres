@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>About Us - {{ company_name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(120deg, #e3eafc 0%, #f8fafb 100%);
+            margin: 0;
+            min-height: 100vh;
+            color: #17446b;
+        }
+        .about-container {
+            max-width: 1000px;
+            margin: 36px auto 0 auto;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 40px #16356718;
+            padding: 40px 34px 50px 34px;
+        }
+        .about-title {
+            text-align: center;
+            font-size: 2.25em;
+            font-weight: 800;
+            color: #17446b;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+        }
+        .about-logo {
+            display: block;
+            margin: 18px auto 25px auto;
+            max-width: 160px;
+            height: 120px;
+            object-fit: contain;
+            border-radius: 22px;
+            box-shadow: 0 2px 12px #17446b20;
+        }
+        .about-text {
+            font-size: 1.18em;
+            text-align: center;
+            color: #264875;
+            margin-bottom: 38px;
+            line-height: 1.7;
+        }
+        .about-text b {
+            color: #17446b;
+            font-weight: 700;
+            font-size: 1.12em;
+            letter-spacing: 0.5px;
+        }
+        .contact-block {
+            text-align: center;
+            margin-top: 8px;
+            margin-bottom: 35px;
+            font-size: 1.18em;
+        }
+        .contact-block i {
+            color: #2196f3;
+            margin-right: 8px;
+            font-size: 1.15em;
+        }
+        .contact-block a {
+            color: #1976d2;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+        .contact-block a:hover {
+            color: #0d47a1;
+            text-decoration: underline;
+        }
+        .team-section {
+            margin-top: 38px;
+        }
+        .team-title {
+            text-align: center;
+            font-size: 1.7em;
+            font-weight: 700;
+            margin-bottom: 18px;
+            color: #17446b;
+            letter-spacing: 0.5px;
+        }
+        .team-title i {
+            color: #1e88e5;
+            margin-right: 8px;
+        }
+        .team-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 44px;
+        }
+        .team-card {
+            background: #f7fafd;
+            box-shadow: 0 4px 24px #16356710;
+            border-radius: 22px;
+            width: 270px;
+            min-height: 340px;
+            padding: 34px 18px 24px 18px;
+            text-align: center;
+            margin: 10px 0;
+            transition: box-shadow 0.16s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .team-card:hover {
+            box-shadow: 0 8px 28px #1877fa22;
+        }
+        .team-photo img {
+            width: 96px; height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #e3eafc;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px #1e88e511;
+            background: #f3f4f7;
+        }
+        .team-name {
+            font-weight: bold;
+            font-size: 1.25em;
+            color: #17446b;
+            margin-bottom: 7px;
+        }
+        .team-role {
+            color: #436c98;
+            font-size: 1.08em;
+            font-weight: 500;
+            margin-bottom: 13px;
+        }
+        @media (max-width: 900px) {
+            .about-container { padding: 18px 3vw 30px 3vw; }
+            .team-row { gap: 16px; }
+            .team-card { min-width: 220px; }
+        }
+        @media (max-width: 650px) {
+            .about-container { padding: 6vw 1vw 20px 1vw;}
+            .about-title { font-size: 1.3em; }
+            .team-title { font-size: 1.1em;}
+            .team-card { min-width: 170px; width: 98vw; }
+        }
+    </style>
+</head>
+<body>
+{% include 'menu.html' %}
+<a href="javascript:history.back()" class="back-btn">⬅ Go Back</a>
+
+<style>
+.back-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* green */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #45a049; /* darker green */
+}
+</style>
+    <div class="about-container">
+        <!-- Company Logo -->
+        <img class="about-logo" src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo of {{ company_name }}">
+
+        <!-- About Title -->
+        <div class="about-title">About {{ company_name }}</div>
+
+        <!-- About Description -->
+        <div class="about-text">
+            <b>{{ company_name }}</b> is dedicated to helping local businesses and professionals succeed with robust, user-friendly business management solutions.<br><br>
+            With a focus on reliability, simplicity, and supporting local needs, we empower our customers to save time and work smarter—every day. Our tools are built with care by a local team who understands real business challenges, so you can concentrate on what matters most: your customers and growth.
+        </div>
+
+        <!-- Contact Email Block -->
+        <div class="contact-block">
+            <i class="fa fa-envelope"></i>
+            Have a question? Reach us any time at
+            <a href="mailto:{{ company_email }}">{{ company_email }}</a>
+        </div>
+
+        <!-- Meet the Team Section -->
+        <div class="team-section">
+            <div class="team-title"><i class="fa fa-users"></i> Meet the Team</div>
+            <div class="team-row">
+                {% for user in users %}
+                <div class="team-card">
+                    <div class="team-photo">
+                        <img src="{{ url_for('static', filename='team/' + user['username'] + '.jpg') }}"
+                             alt="{{ user['first_name'] }} {{ user['last_name'] }}"
+                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='default-user.png') }}';">
+                    </div>
+                    <div class="team-name">
+                        {{ user['first_name'] }} {{ user['last_name'] }}
+                    </div>
+                    <div class="team-role">
+                        {% if user['role'] == 'admin' %}
+                            Lead Developer
+                        {% elif user['role'] == 'user' %}
+                            Team Member
+                        {% else %}
+                            {{ user['role']|capitalize }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

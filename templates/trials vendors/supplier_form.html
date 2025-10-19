@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Supplier Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f6f8fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      background: #fff;
+      max-width: 1200px;
+      margin: 36px auto 0 auto;
+      border-radius: 18px;
+      box-shadow: 0 6px 32px #001f4930;
+      padding: 32px 32px 28px 32px;
+    }
+    .logo {
+      font-size: 2.1em;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 0;
+      /* color styling for "weproc.com" fallback if needed */
+    }
+    .logo span.company-blue { color: #2563eb; }
+    .logo span.company-black { color: #323232; }
+    .subtitle {
+      font-size: 1.22em;
+      font-weight: 600;
+      margin-bottom: 18px;
+      color: #223;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+      font-size: 1em;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 10px;
+      text-align: left;
+    }
+    th {
+      background: #2359a3;
+      color: #fff;
+      font-weight: 600;
+      font-size: 1.05em;
+      letter-spacing: 0.03em;
+    }
+    tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 7px 8px;
+      font-size: 1em;
+      border: 1px solid #b0b6be;
+      border-radius: 6px;
+      box-sizing: border-box;
+      background: #fff;
+      color: #222;
+      outline: none;
+      transition: border 0.15s, background 0.15s;
+    }
+    input:focus, textarea:focus {
+      border-color: #2563eb;
+      background: #eaf2fb;
+    }
+    .actions {
+      text-align: right;
+      margin-top: 15px;
+    }
+    .btn {
+      background: #2563eb;
+      color: #fff;
+      padding: 8px 24px;
+      border: none;
+      border-radius: 7px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-left: 7px;
+    }
+    .btn:hover {
+      background: #1741a3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      {{ company_info.company_name if company_info.company_name else "Company Name" }}
+    </div>
+    <div class="subtitle">Supplier management</div>
+    <form method="post" action="#">
+      <table>
+        <tr>
+          <th>Supplier</th>
+          <th>Contact</th>
+          <th>Phone</th>
+          <th>Fax</th>
+          <th>E-mail</th>
+          <th>Website</th>
+          <th>Address</th>
+          <th>City</th>
+          <th>Region</th>
+          <th>Postal code</th>
+          <th>Country</th>
+        </tr>
+        <!-- Row 1 -->
+        <tr>
+          <td><input type="text" name="supplier_1"></td>
+          <td><input type="text" name="contact_1"></td>
+          <td><input type="text" name="phone_1"></td>
+          <td><input type="text" name="fax_1"></td>
+          <td><input type="email" name="email_1"></td>
+          <td><input type="url" name="website_1"></td>
+          <td><input type="text" name="address_1"></td>
+          <td><input type="text" name="city_1"></td>
+          <td><input type="text" name="region_1"></td>
+          <td><input type="text" name="postal_1"></td>
+          <td><input type="text" name="country_1"></td>
+        </tr>
+        <!-- Row 2 -->
+        <tr>
+          <td><input type="text" name="supplier_2"></td>
+          <td><input type="text" name="contact_2"></td>
+          <td><input type="text" name="phone_2"></td>
+          <td><input type="text" name="fax_2"></td>
+          <td><input type="email" name="email_2"></td>
+          <td><input type="url" name="website_2"></td>
+          <td><input type="text" name="address_2"></td>
+          <td><input type="text" name="city_2"></td>
+          <td><input type="text" name="region_2"></td>
+          <td><input type="text" name="postal_2"></td>
+          <td><input type="text" name="country_2"></td>
+        </tr>
+        <!-- Row 3 -->
+        <tr>
+          <td><input type="text" name="supplier_3"></td>
+          <td><input type="text" name="contact_3"></td>
+          <td><input type="text" name="phone_3"></td>
+          <td><input type="text" name="fax_3"></td>
+          <td><input type="email" name="email_3"></td>
+          <td><input type="url" name="website_3"></td>
+          <td><input type="text" name="address_3"></td>
+          <td><input type="text" name="city_3"></td>
+          <td><input type="text" name="region_3"></td>
+          <td><input type="text" name="postal_3"></td>
+          <td><input type="text" name="country_3"></td>
+        </tr>
+      </table>
+      <div class="actions">
+        <button class="btn" type="submit">Save Suppliers</button>
+        <button class="btn" type="reset">Clear All</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
