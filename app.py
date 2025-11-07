@@ -84,26 +84,21 @@ APP_NAME = "Papaiacovou"
 DB_NAME = "customer.db"
 
 # ==== Free-plan shim: make SQLite & files work without a Disk ====
-import os, sqlite3, shutil
-from pathlib import Path
-
-# ==== Free-plan shim: ALWAYS use /tmp on Linux (Render free), keep Windows as-is ====
-import os, sqlite3, shutil
-from pathlib import Path
-
 # ==== FORCE /tmp on Linux (Render free) & keep Windows as-is ====
-import os, sqlite3, shutil
+# ==== Free-plan shim: use /tmp without monkey-patching ====
+import os, shutil
 from pathlib import Path
 
 IS_WINDOWS = bool(os.environ.get("APPDATA"))
 
 if not IS_WINDOWS:
-    # Hard force to /tmp regardless of existing env vars
+    # Force writable ephemeral paths on Render free
     DB_PATH = Path("/tmp/customer.db")
-    os.environ["DATABASE_PATH"] = str(DB_PATH)         # keep code that reads env happy
-    os.environ.setdefault("OUTPUT_BASE", "/tmp")       # for PDFs, etc.
+    os.environ.pop("DATABASE_PATH", None)   # ensure nothing forces /var/data
+    os.environ["DATABASE_PATH"] = str(DB_PATH)   # keep other code happy if it reads this
+    os.environ.setdefault("OUTPUT_BASE", "/tmp") # for PDFs, etc.
 
-    # Make sure /tmp/customer.db exists (seed if available)
+    # 1) Ensure /tmp/customer.db exists (seed if available)
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     if not DB_PATH.exists():
         for seed in (Path("seed") / "customer.db", Path("customer.db")):
@@ -115,21 +110,34 @@ if not IS_WINDOWS:
             DB_PATH.touch()
             print(f"[init] Created empty DB at {DB_PATH}")
 
-    # Redirect any connect("customer.db") calls to /tmp/customer.db
-    _real_connect = sqlite3.connect
-    def _redirect_connect(path, *a, **k):
-        try:
-            if str(path) in ("customer.db", "./customer.db", "/var/data/customer.db"):
-                path = str(DB_PATH)
-        except Exception:
-            pass
-        return _real_connect(path, *a, **k)
-    sqlite3.connect = _redirect_connect
+    # 2) Point ./customer.db to /tmp/customer.db so old code keeps working
+    app_dir = Path(__file__).resolve().parent
+    local_db = app_dir / "customer.db"
+    try:
+        if local_db.exists() or local_db.is_symlink():
+            # If an old file exists and is NOT the target, replace it with a symlink
+            try:
+                if local_db.is_symlink() and local_db.resolve() == DB_PATH:
+                    pass  # already correct
+                else:
+                    local_db.unlink()
+                    local_db.symlink_to(DB_PATH)
+            except Exception:
+                # If symlink fails, copy instead
+                if local_db.exists():
+                    local_db.unlink()
+                shutil.copy2(DB_PATH, local_db)
+        else:
+            # Create fresh symlink; if not permitted, copy
+            try:
+                local_db.symlink_to(DB_PATH)
+            except Exception:
+                shutil.copy2(DB_PATH, local_db)
+    except Exception as e:
+        print(f"[init] Warning: could not link ./customer.db -> {DB_PATH}: {e}")
 # ==== end shim ====
 
-# ==== end shim ====
 
-# ==== end shim ====
 
 
 def get_user_db_folder():
