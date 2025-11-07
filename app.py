@@ -154,10 +154,29 @@ def admin_required(f):
     return decorated_function
 
 # ------------- DB HELPERS -------------
+import os, sqlite3, shutil
+from pathlib import Path
+
+def get_db_path():
+    """Return the correct database path based on environment."""
+    return Path(os.environ.get("DATABASE_PATH", "customer.db"))
+
+def ensure_db_initialized():
+    """If the DB file doesn’t exist (e.g., first cloud run), copy it from the repo."""
+    db_path = get_db_path()
+    if not db_path.exists():
+        # Try to copy from a bundled version in your project
+        for seed in [Path("seed/customer.db"), Path("customer.db")]:
+            if seed.exists():
+                db_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(seed, db_path)
+                print(f"Database initialized at {db_path}")
+                break
+
 def get_connection():
-    """Return a SQLite connection using the correct database path."""
-    db_path = os.environ.get("DATABASE_PATH", "customer.db")
-    return sqlite3.connect(db_path)
+    """Return a SQLite connection using the correct path."""
+    ensure_db_initialized()
+    return sqlite3.connect(get_db_path())
 
 INVOICE_COUNTER_FILE = "invoice_number.txt"
 DATABASE_FILE = "customer.db"
