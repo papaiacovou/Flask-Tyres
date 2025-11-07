@@ -154,6 +154,11 @@ def admin_required(f):
     return decorated_function
 
 # ------------- DB HELPERS -------------
+def get_connection():
+    """Return a SQLite connection using the correct database path."""
+    db_path = os.environ.get("DATABASE_PATH", "customer.db")
+    return sqlite3.connect(db_path)
+
 INVOICE_COUNTER_FILE = "invoice_number.txt"
 DATABASE_FILE = "customer.db"
 QUOTATION_COUNTER_FILE = "quotation_number.txt"
@@ -2444,7 +2449,7 @@ def delete_inventory():
         return redirect(url_for('product_inventory'))
 
     import sqlite3
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     cur = conn.cursor()
     cur.execute("DELETE FROM product_inventory WHERE id = ?", (item_id,))
     conn.commit()
@@ -2464,7 +2469,7 @@ def import_inventory():
             df = pd.read_excel(file)
             # ... process/rename columns as needed ...
             # Insert each row to DB as usual
-            conn = sqlite3.connect('customer.db')
+            conn = conn = get_connection()
             cursor = conn.cursor()
             for _, row in df.iterrows():
                 cursor.execute("""
@@ -2501,7 +2506,7 @@ def import_inventory():
 
 @app.route('/delete_all_inventory', methods=['POST'])
 def delete_all_inventory():
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('DELETE FROM product_inventory')
     conn.commit()
@@ -3018,7 +3023,7 @@ def support():
     import random
     company_name = "Your Company Name"
     try:
-        conn = sqlite3.connect('customer.db')
+        conn = conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT company_name FROM company_info LIMIT 1;")
         row = cursor.fetchone()
@@ -3065,7 +3070,7 @@ def support():
 @app.route('/about_us')
 def about_us():
     import sqlite3
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     # Get company info (assuming only one row)
@@ -3090,7 +3095,7 @@ def get_stock_quantity():
     if not inventory_id or not description:
         return jsonify({'error': 'Missing params'}), 400
     import sqlite3
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     c = conn.cursor()
     c.execute("""
         SELECT [Quantity in stock]
@@ -3107,7 +3112,7 @@ def get_stock_quantity():
 @app.route('/debug_inventory')
 def debug_inventory():
     import sqlite3
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT * FROM product_inventory LIMIT 3")
     rows = c.fetchall()
@@ -3121,7 +3126,7 @@ def documentation():
     return render_template('documentation.html')
 
 def get_db_connection():
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -3144,7 +3149,7 @@ def suppliers():
         country = request.form.get('country', '').strip().upper()
 
         # Connect to DB
-        conn = sqlite3.connect('customer.db')
+        conn = conn = get_connection()
         c = conn.cursor()
         # Check for duplicate supplier (case-insensitive)
         c.execute('SELECT 1 FROM suppliers WHERE UPPER(supplier) = ?', (supplier,))
@@ -3177,7 +3182,7 @@ def list_suppliers():
     company_info = get_company_info() if 'get_company_info' in globals() else {}
 
     import sqlite3
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     conn.row_factory = sqlite3.Row  # so columns are accessible by name
     cur = conn.cursor()
     cur.execute('SELECT * FROM suppliers ORDER BY supplier ASC')
@@ -3203,7 +3208,7 @@ def export_suppliers_pdf():
     company_name = company_info.get("company_name", "Company Name")
 
     # Get suppliers from DB
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     conn.row_factory = sqlite3.Row
     suppliers = conn.execute('SELECT * FROM suppliers ORDER BY supplier ASC').fetchall()
     conn.close()
@@ -3288,7 +3293,7 @@ import sqlite3
 def edit_supplier(supplier_id):
     company_info = get_company_info() if 'get_company_info' in globals() else {}
 
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -3327,7 +3332,7 @@ def edit_supplier(supplier_id):
 
 @app.route('/delete_supplier/<int:supplier_id>')
 def delete_supplier(supplier_id):
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     cur = conn.cursor()
     cur.execute("DELETE FROM suppliers WHERE id = ?", (supplier_id,))
     conn.commit()
@@ -3514,7 +3519,7 @@ def accounts_payable_add():
 
 
 def get_company_receipt():
-    conn = sqlite3.connect('customer.db')
+    conn = conn = get_connection()
     c = conn.cursor()
     c.execute("""
         SELECT company_name, address, city, postal, country, phone
