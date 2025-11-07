@@ -80,10 +80,7 @@
   font-weight: bold;
   transition: background-color 0.3s ease;
 }
-
-.back-btn:hover {
-  background-color: #45a049; /* darker green */
-}
+.back-btn:hover { background-color: #45a049; }
 </style>
 
   <h2 class="page-title">Create Quotation</h2>
@@ -92,10 +89,10 @@
     <div class="top-section">
       <div class="box">
         <div style="margin-bottom:18px;">
-          <!-- COMPANY INFO BOX ADDED -->
+          <!-- COMPANY INFO BOX -->
           <div class="company-info-box">
             <div style="font-size:1em; font-weight:bold; margin-bottom:6px;">
-            {{ company.company_name }}
+              {{ company.company_name }}
             </div>
             {% if company.address %}{{ company.address }}<br>{% endif %}
             {% if company.city or company.postal %}
@@ -199,7 +196,6 @@
     <button type="submit" name="action" value="send">Generate &amp; Send</button>
   </form>
 
-  <!-- script unchanged! -->
   <script>
     // --- Tooltip helpers ---
     function showTooltip(el, message) {
@@ -213,10 +209,7 @@
       el._tooltip = tooltip;
     }
     function hideTooltip(el) {
-      if (el._tooltip) {
-        el._tooltip.remove();
-        el._tooltip = null;
-      }
+      if (el._tooltip) { el._tooltip.remove(); el._tooltip = null; }
     }
     function attachStockHover(row) {
       const unitsInput = row.querySelector('input[name="units"]');
@@ -224,12 +217,9 @@
       if (!unitsInput || !prodSelect) return;
 
       unitsInput.addEventListener('mouseenter', function() {
-        // Find the description field (select or input) inside desc-cell in this row
         const descCell = row.querySelector('.desc-cell');
         let descField = null;
-        if (descCell) {
-          descField = descCell.querySelector('select[name="description"], input[name="description"]');
-        }
+        if (descCell) descField = descCell.querySelector('select[name="description"], input[name="description"]');
         const inventoryId = prodSelect.value;
         const description = descField ? descField.value : "";
         if (!inventoryId || !description) {
@@ -238,14 +228,10 @@
         }
         fetch(`/get_stock_quantity?inventory_id=${encodeURIComponent(inventoryId)}&description=${encodeURIComponent(description)}`)
           .then(r => r.json())
-          .then(obj => {
-            showTooltip(unitsInput, `Available: ${obj.quantity}`);
-          });
+          .then(obj => { showTooltip(unitsInput, `Available: ${obj.quantity}`); });
       });
 
-      unitsInput.addEventListener('mouseleave', function() {
-        hideTooltip(unitsInput);
-      });
+      unitsInput.addEventListener('mouseleave', function() { hideTooltip(unitsInput); });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -255,7 +241,7 @@
         .then(names => {
           const list = document.getElementById('customerList');
           list.innerHTML = '';
-          names.forEach(name => {
+          (names || []).forEach(name => {
             const option = document.createElement('option');
             option.value = name;
             list.appendChild(option);
@@ -293,8 +279,8 @@
       for (let row of rows) {
         const qty = parseFloat(row.cells[2].querySelector('input[name="units"]').value) || 0;
         const price = parseFloat(row.cells[3].querySelector('input[name="price"]').value) || 0;
-        const discount = parseFloat(row.cells[4].querySelector('input[name="discount"]').value) || 0;
-        const lineSubtotal = Math.max(qty * price - discount, 0);
+        theDiscount = parseFloat(row.cells[4].querySelector('input[name="discount"]').value) || 0;
+        const lineSubtotal = Math.max(qty * price - theDiscount, 0);
         row.cells[5].querySelector('span').textContent = "€ " + lineSubtotal.toFixed(2);
         subtotal += lineSubtotal;
       }
@@ -340,6 +326,33 @@
       }
     }
 
+    // === NEW: auto-fill price for quotations (from inventory) ===
+    async function fetchQuotationPrice(row) {
+      try {
+        const typeSel = row.querySelector('select.prod-type');
+        const productSelect = row.querySelector('select.prod-item');
+        const descField = row.querySelector('[name="description"]');
+        const priceInput = row.querySelector('input[name="price"]');
+        if (!productSelect || !descField || !priceInput) return;
+
+        // Only auto-price tyres (inventory-backed)
+        if (typeSel && typeSel.value !== 'tyres') return;
+
+        const inventoryId = productSelect.value;
+        const description = descField.value;
+        if (!inventoryId || !description) return;
+
+        const res = await fetch(`/get_unit_price_quotation?inventory_id=${encodeURIComponent(inventoryId)}&description=${encodeURIComponent(description)}`);
+        const data = await res.json();
+        if (data && data.unit_price !== null && data.unit_price !== undefined) {
+          priceInput.value = data.unit_price;
+          calculateSubtotal();
+        }
+      } catch (e) {
+        /* silent fail */
+      }
+    }
+
     function makeDescriptionControl(row, type) {
       const cell = row.querySelector('.desc-cell');
       if (!cell) return;
@@ -354,9 +367,9 @@
         blank.textContent = '-- Select Size --';
         sel.appendChild(blank);
 
-        // Get the Inventory ID selected for this row
         const prodSel = row.querySelector('select.prod-item');
         const inventoryId = prodSel && prodSel.value;
+
         if (inventoryId) {
           fetch(`/get_sizes_for_inventory_id?inventory_id=${encodeURIComponent(inventoryId)}`)
             .then(r => r.json())
@@ -369,7 +382,8 @@
               });
             });
         }
-        // Update sizes when Inventory ID changes
+
+        // When Inventory ID changes, refresh sizes AND try price lookup
         if (prodSel) {
           prodSel.onchange = function() {
             sel.innerHTML = '';
@@ -377,6 +391,12 @@
             blank2.value = '';
             blank2.textContent = '-- Select Size --';
             sel.appendChild(blank2);
+
+            // clear price when product changes
+            const priceInput = row.querySelector('input[name="price"]');
+            if (priceInput) priceInput.value = '';
+            calculateSubtotal();
+
             if (this.value) {
               fetch(`/get_sizes_for_inventory_id?inventory_id=${encodeURIComponent(this.value)}`)
                 .then(r => r.json())
@@ -389,8 +409,17 @@
                   });
                 });
             }
-          }
+            // attempt to fetch price too (if a size is already selected)
+            fetchQuotationPrice(row);
+          };
         }
+
+        // When size changes, try to fetch price & recalc
+        sel.addEventListener('change', () => {
+          fetchQuotationPrice(row);
+          calculateSubtotal();
+        });
+
         cell.appendChild(sel);
         const note = document.createElement('div');
         note.className = 'small-note';
@@ -401,6 +430,8 @@
         inp.type = 'text';
         inp.name = 'description';
         inp.required = true;
+        // For services, manual price entry; keep totals updating
+        inp.addEventListener('input', () => calculateSubtotal());
         cell.appendChild(inp);
       }
     }
@@ -411,9 +442,13 @@
       const newType = typeSelect.value;
       fillProductItems(itemSelect, newType);
       makeDescriptionControl(row, newType);
-      // When changing type, clear product & description values
+      // When changing type, clear dependent fields
       if (itemSelect) itemSelect.value = '';
-      if (row.querySelector('[name="description"]')) row.querySelector('[name="description"]').value = '';
+      const descEl = row.querySelector('[name="description"]');
+      if (descEl) descEl.value = '';
+      const priceInput = row.querySelector('input[name="price"]');
+      if (priceInput) priceInput.value = '';
+      calculateSubtotal();
     }
 
     async function initRow(row) {
@@ -424,7 +459,22 @@
         fillProductItems(itemSel, type);
         makeDescriptionControl(row, type);
       }
-      attachStockHover(row); // <-- Tooltip on units hover
+
+      // Auto-pricing if fields get filled
+      if (itemSel) {
+        itemSel.addEventListener('change', () => fetchQuotationPrice(row));
+      }
+      const descWatcher = new MutationObserver(() => {
+        const desc = row.querySelector('[name="description"]');
+        if (desc) {
+          desc.addEventListener('change', () => fetchQuotationPrice(row));
+          desc.addEventListener('input', () => calculateSubtotal());
+          descWatcher.disconnect();
+        }
+      });
+      descWatcher.observe(row, { childList: true, subtree: true });
+
+      attachStockHover(row); // tooltip on units hover
     }
 
     function buildRowHtml() {

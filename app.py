@@ -1923,6 +1923,24 @@ def quotation():
         today=datetime.today().strftime('%d-%m-%Y')
     )
 
+
+@app.route('/get_unit_price_quotation')
+def get_unit_price_quotation():
+    inventory_id = request.args.get('inventory_id')
+    description = request.args.get('description')
+    if not inventory_id or not description:
+        return jsonify({'unit_price': None})
+    with closing(db_connect()) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            'SELECT "Unit price" FROM product_inventory WHERE "Inventory ID"=? AND "Description"=?',
+            (inventory_id, description)
+        )
+        row = cur.fetchone()
+        if row and row[0] is not None:
+            return jsonify({'unit_price': row[0]})
+    return jsonify({'unit_price': None})
+
    
 
 @app.route('/find_invoice', methods=['GET', 'POST'])
