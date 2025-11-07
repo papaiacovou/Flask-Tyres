@@ -83,6 +83,52 @@ import shutil
 APP_NAME = "Papaiacovou"
 DB_NAME = "customer.db"
 
+# ==== Free-plan shim: make SQLite & files work without a Disk ====
+import os, sqlite3, shutil
+from pathlib import Path
+
+# ==== Free-plan shim: ALWAYS use /tmp on Linux (Render free), keep Windows as-is ====
+import os, sqlite3, shutil
+from pathlib import Path
+
+IS_WINDOWS = bool(os.environ.get("APPDATA"))
+
+if not IS_WINDOWS:
+    # Force a writable ephemeral path on free plan
+    os.environ["DATABASE_PATH"] = "/tmp/customer.db"       # <— no /var/data
+    os.environ.setdefault("OUTPUT_BASE", "/tmp")           # where you save PDFs, etc.
+
+    def _ensure_tmp_ready():
+        db_path = Path(os.environ["DATABASE_PATH"])
+        db_path.parent.mkdir(parents=True, exist_ok=True)  # /tmp exists, safe
+        if not db_path.exists():
+            # Seed from repo if available (optional)
+            for seed in (Path("seed") / "customer.db", Path("customer.db")):
+                if seed.exists():
+                    shutil.copy2(seed, db_path)
+                    print(f"[init] Copied seed DB -> {db_path}")
+                    break
+            else:
+                db_path.touch()
+                print(f"[init] Created empty DB at {db_path}")
+
+    _ensure_tmp_ready()
+
+    # Redirect any plain 'customer.db' connects to /tmp/customer.db automatically
+    _real_connect = sqlite3.connect
+    def _redirect_connect(path, *a, **k):
+        try:
+            if str(path) in ("customer.db", "./customer.db"):
+                path = os.environ["DATABASE_PATH"]
+        except Exception:
+            pass
+        return _real_connect(path, *a, **k)
+    sqlite3.connect = _redirect_connect
+# ==== end shim ====
+
+# ==== end shim ====
+
+
 def get_user_db_folder():
     return os.path.join(os.environ.get("APPDATA"), APP_NAME)
 
