@@ -22,10 +22,46 @@ import pdf2image
 import tempfile
 import re
 
-import os
 import sys
-import shutil
-import sqlite3
+
+
+# ==== Cloud-safe SQLite shim (keep your Windows code unchanged) ====
+import os, sqlite3, shutil
+from pathlib import Path
+
+# If we're not on Windows (no APPDATA), assume cloud and use /var/data
+if not os.environ.get("APPDATA"):
+    os.environ.setdefault("DATABASE_PATH", "/var/data/customer.db")
+
+    def _ensure_cloud_db():
+        db_path = Path(os.environ["DATABASE_PATH"])
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        if not db_path.exists():
+            # seed from repo if available
+            for seed in (Path("seed") / "customer.db", Path("customer.db")):
+                if seed.exists():
+                    shutil.copy2(seed, db_path)
+                    print(f"[init] Copied seed DB -> {db_path}")
+                    break
+            else:
+                db_path.touch()
+                print(f"[init] Created empty DB at {db_path}")
+
+    _ensure_cloud_db()
+
+    # Monkey-patch sqlite3.connect so any 'customer.db' in your code
+    # automatically points to /var/data/customer.db on Render.
+    _real_connect = sqlite3.connect
+    def _redirect_connect(path, *a, **k):
+        try:
+            if str(path) in ("customer.db", "./customer.db"):
+                path = os.environ["DATABASE_PATH"]
+        except Exception:
+            pass
+        return _real_connect(path, *a, **k)
+    sqlite3.connect = _redirect_connect
+# ==== end shim ====
+
 
 def resource_path(relative_path):
     """
@@ -80,7 +116,10 @@ def ensure_user_db():
         print(f"DB found at {user_db_path}")
 
 # Call this ONCE at the top, before anything DB-related runs:
-ensure_user_db()
+# Run the Windows-only bootstrap **only** when APPDATA exists
+if os.environ.get("APPDATA"):
+    ensure_user_db()
+
 
 def db_connect():
     db_path = get_user_db_path()
