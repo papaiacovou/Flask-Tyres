@@ -86,6 +86,31 @@ DB_NAME = "customer.db"
 # ==== Free-plan shim: make SQLite & files work without a Disk ====
 # ==== FORCE /tmp on Linux (Render free) & keep Windows as-is ====
 # ==== Free-plan shim: use /tmp without monkey-patching ====
+
+import io, time, zipfile, shutil
+from pathlib import Path
+
+# Resolve paths used on Render free plan
+OUTPUT_BASE = Path(os.environ.get("OUTPUT_BASE", "/tmp"))
+DB_PATH = Path(os.environ.get("DATABASE_PATH", "/tmp/customer.db"))
+
+def _is_admin():
+    """
+    Gate the backup/restore endpoints.
+    If you use Flask-Login with roles, replace this with your real check.
+    Fallback: allow a token ?t=SECRET_TOKEN in the URL/env.
+    """
+    try:
+        from flask_login import current_user
+        if getattr(current_user, "is_authenticated", False) and getattr(current_user, "role", "admin") == "admin":
+            return True
+    except Exception:
+        pass
+    # token fallback
+    token = os.environ.get("BACKUP_TOKEN")
+    return token and (request.args.get("t") == token or request.headers.get("X-Backup-Token") == token)
+
+
 import os, shutil
 from pathlib import Path
 
@@ -3688,6 +3713,112 @@ def receipt():
         }
         return render_template("cash_receipt_output.html", data=data)
     return render_template("cash_receipt_form.html", company=company)
+    
+from flask import send_file, abort, request
+
+@app.route("/admin/backup", methods=["GET"])
+def backup_zip():
+    if not _is_admin():
+        return abort(403)
+
+    # Create an in-memory ZIP with DB + common output folders if present
+    mem = io.BytesIO()
+    with zipfile.ZipFile(mem, "w", zipfile.ZIP_DEFLATED) as zf:
+        # Always include DB
+        if DB_PATH.exists():
+            zf.write(DB_PATH, arcname="customer.db")
+
+        # Optionally include invoices/receipts folders if you save PDFs there
+        for name in ("invoices", "receipts", "outbox"):
+            p = OUTPUT_BASE / name
+            if p.exists() and p.is_dir():
+                for fp in p.rglob("*"):
+                    if fp.is_file():
+                        zf.write(fp, arcname=str(Path(name) / fp.relative_to(p)))
+
+    mem.seek(0)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    return send_file(mem, as_attachment=True,
+                     download_name=f"backup-{stamp}.zip",
+                     mimetype="application/zip")
+
+
+from flask import render_template_string, flash, redirect, url_for
+
+RESTORE_FORM_HTML = """
+<!doctype html>
+<title>Restore</title>
+<h3>Restore database</h3>
+<form method="post" enctype="multipart/form-data">
+  <input type="file" name="file" accept=".db,.zip" required>
+  <button type="submit">Upload & Restore</button>
+</form>
+<p>Tip: you can pass token as ?t=... if you don't use login.</p>
+"""
+
+@app.route("/admin/restore", methods=["GET", "POST"])
+def restore_db():
+    if not _is_admin():
+        return abort(403)
+
+    if request.method == "GET":
+        return render_template_string(RESTORE_FORM_HTML)
+
+    f = request.files.get("file")
+    if not f:
+        return "No file uploaded", 400
+
+    # Save upload to /tmp
+    tmp_dir = Path("/tmp/restore_upload")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    tmp_file = tmp_dir / f.filename
+    f.save(tmp_file)
+
+    try:
+        if tmp_file.suffix.lower() == ".db":
+            # Replace DB
+            DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(tmp_file, DB_PATH)
+        elif tmp_file.suffix.lower() == ".zip":
+            # Extract ZIP; if it contains customer.db, replace; copy folders too
+            with zipfile.ZipFile(tmp_file, "r") as zf:
+                zf.extractall(tmp_dir)
+            cand = tmp_dir / "customer.db"
+            if cand.exists():
+                DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(cand, DB_PATH)
+            # Restore optional folders
+            for name in ("invoices", "receipts", "outbox"):
+                src = tmp_dir / name
+                if src.exists() and src.is_dir():
+                    dst = OUTPUT_BASE / name
+                    if dst.exists():
+                        shutil.rmtree(dst)
+                    shutil.copytree(src, dst)
+        else:
+            return "Unsupported file type (use .db or .zip)", 400
+    finally:
+        # Clean temp
+        try: shutil.rmtree(tmp_dir)
+        except Exception: pass
+
+    return "Restore complete. Reload the app.", 200
+    
+# 1) Simple probe to confirm routes are loading
+@app.route("/admin/ping")
+def admin_ping():
+    return "admin routes are loaded"
+
+# 2) List all registered URLs
+@app.route("/__routes")
+def __routes():
+    return "<pre>" + "\n".join(sorted(r.rule for r in app.url_map.iter_rules())) + "</pre>"
+    
+@app.route('/admin/backup', methods=['GET'])
+@admin_required
+def admin_backup_alias():
+    return backup_db()  # calls your existing /backup_db handler
+    
 
 
 if __name__ == "__main__":
