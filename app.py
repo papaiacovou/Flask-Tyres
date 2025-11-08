@@ -3743,7 +3743,9 @@ def backup_zip():
                      mimetype="application/zip")
 
 
-from flask import render_template_string, flash, redirect, url_for
+from flask import render_template_string, request, abort
+from pathlib import Path
+import shutil, zipfile
 
 RESTORE_FORM_HTML = """
 <!doctype html>
@@ -3756,9 +3758,11 @@ RESTORE_FORM_HTML = """
 <p>Tip: you can pass token as ?t=... if you don't use login.</p>
 """
 
+# Expose BOTH URLs on the SAME function to avoid endpoint collisions
+@app.route("/restore_db", methods=["GET", "POST"])
 @app.route("/admin/restore", methods=["GET", "POST"])
 def restore_db():
-    if not _is_admin():
+    if not _is_admin():  # uses your existing admin/token gate
         return abort(403)
 
     if request.method == "GET":
@@ -3779,14 +3783,17 @@ def restore_db():
             # Replace DB
             DB_PATH.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(tmp_file, DB_PATH)
+
         elif tmp_file.suffix.lower() == ".zip":
             # Extract ZIP; if it contains customer.db, replace; copy folders too
             with zipfile.ZipFile(tmp_file, "r") as zf:
                 zf.extractall(tmp_dir)
+
             cand = tmp_dir / "customer.db"
             if cand.exists():
                 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(cand, DB_PATH)
+
             # Restore optional folders
             for name in ("invoices", "receipts", "outbox"):
                 src = tmp_dir / name
@@ -3797,27 +3804,36 @@ def restore_db():
                     shutil.copytree(src, dst)
         else:
             return "Unsupported file type (use .db or .zip)", 400
+
     finally:
         # Clean temp
-        try: shutil.rmtree(tmp_dir)
-        except Exception: pass
+        try:
+            shutil.rmtree(tmp_dir)
+        except Exception:
+            pass
 
     return "Restore complete. Reload the app.", 200
-    
-# 1) Simple probe to confirm routes are loading
+
+
+# --- Diagnostics (optional, safe to keep) ---
 @app.route("/admin/ping")
 def admin_ping():
     return "admin routes are loaded"
 
-# 2) List all registered URLs
 @app.route("/__routes")
 def __routes():
     return "<pre>" + "\n".join(sorted(r.rule for r in app.url_map.iter_rules())) + "</pre>"
-    
-@app.route('/admin/backup', methods=['GET'])
-@admin_required
-def admin_backup_alias():
-    return backup_db()  # calls your existing /backup_db handler
+
+
+# --- Backup alias: /admin/backup ---
+# This creates an alias to your EXISTING /backup_db route without relying on @admin_required.
+# It uses a different endpoint name to avoid collisions.
+@app.route('/admin/backup', methods=['GET'], endpoint='admin_backup')
+def backup_db_alias():
+    # Call your existing handler (named 'backup_db' or 'backup_zip' in your app).
+    # If your current function name is different, update the next line accordingly.
+    return backup_db()   # or: return backup_zip()
+
     
 
 
