@@ -1,132 +1,113 @@
-from flask import Flask, render_template, request, send_file, flash, jsonify, abort, url_for, session, redirect
+# ====== lightweight core imports ======
+from flask import (
+    Flask, render_template, request, send_file, flash, jsonify, abort,
+    url_for, session, redirect, render_template_string
+)
 from io import BytesIO
 from datetime import datetime, timedelta
-import pdfkit
-import os
-import glob
-import sqlite3
-import smtplib
-import re
-import shutil
-import pandas as pd
-from flask_babel import Babel, _
+import os, sys, glob, sqlite3, smtplib, re, shutil, tempfile, time, zipfile
 from email.message import EmailMessage
 from contextlib import closing
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-from flask import redirect, url_for, flash
-import pytesseract
-from PIL import Image
-import pdf2image
-import tempfile
-import re
-
-import sys
-
-
-# ==== Cloud-safe SQLite shim (keep your Windows code unchanged) ====
-import os, sqlite3, shutil
 from pathlib import Path
 
-# If we're not on Windows (no APPDATA), assume cloud and use /var/data
-if not os.environ.get("APPDATA"):
-    os.environ.setdefault("DATABASE_PATH", "/var/data/customer.db")
+# ====== heavy libs (kept for compatibility; later we can lazy-load them) ======
+import pdfkit            # later: move inside routes that create PDFs
+import pandas as pd      # later: move into routes that parse Excel
+import pytesseract       # later: move into OCR routes only
+from PIL import Image    # later: move into routes that touch images
+import pdf2image         # later: move into routes that convert PDFs
 
-    def _ensure_cloud_db():
-        db_path = Path(os.environ["DATABASE_PATH"])
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        if not db_path.exists():
-            # seed from repo if available
-            for seed in (Path("seed") / "customer.db", Path("customer.db")):
-                if seed.exists():
-                    shutil.copy2(seed, db_path)
-                    print(f"[init] Copied seed DB -> {db_path}")
-                    break
-            else:
-                db_path.touch()
-                print(f"[init] Created empty DB at {db_path}")
+# i18n
+from flask_babel import Babel, _
 
-    _ensure_cloud_db()
+# Optional Windows-only Outlook automation (safe if not installed)
+try:
+    import win32com.client as win32  # requires pywin32 on Windows
+except Exception:
+    win32 = None
 
-    # Monkey-patch sqlite3.connect so any 'customer.db' in your code
-    # automatically points to /var/data/customer.db on Render.
-    _real_connect = sqlite3.connect
-    def _redirect_connect(path, *a, **k):
-        try:
-            if str(path) in ("customer.db", "./customer.db"):
-                path = os.environ["DATABASE_PATH"]
-        except Exception:
-            pass
-        return _real_connect(path, *a, **k)
-    sqlite3.connect = _redirect_connect
-# ==== end shim ====
+# -----------------------------------------------------------------------------
+# App & i18n setup
+# -----------------------------------------------------------------------------
+app = Flask(__name__)
+app.secret_key = 'secret_key_for_flash_messages'
+app.config['BABEL_DEFAULT_LOCALE'] = 'en'
 
+babel = Babel(app)
 
-def resource_path(relative_path):
-    """
-    Get absolute path to resource, works for dev and PyInstaller.
-    """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
+def get_locale():
+    return session.get('lang', 'en')
 
-    return os.path.join(base_path, relative_path)
+babel.locale_selector_func = get_locale
 
+# Small prod speed-ups (no effect locally)
+app.config.setdefault("TEMPLATES_AUTO_RELOAD", False)
+app.config.setdefault("SEND_FILE_MAX_AGE_DEFAULT", 3600)
 
-import os
-import sqlite3
-import shutil
-
+# -----------------------------------------------------------------------------
+# Paths & database setup (Windows vs Cloud/Render free)
+# -----------------------------------------------------------------------------
 APP_NAME = "Papaiacovou"
-DB_NAME = "customer.db"
-
-# ==== Free-plan shim: make SQLite & files work without a Disk ====
-# ==== FORCE /tmp on Linux (Render free) & keep Windows as-is ====
-# ==== Free-plan shim: use /tmp without monkey-patching ====
-
-import io, time, zipfile, shutil
-from pathlib import Path
-
-# Resolve paths used on Render free plan
-OUTPUT_BASE = Path(os.environ.get("OUTPUT_BASE", "/tmp"))
-DB_PATH = Path(os.environ.get("DATABASE_PATH", "/tmp/customer.db"))
-
-def _is_admin():
-    """
-    Gate the backup/restore endpoints.
-    If you use Flask-Login with roles, replace this with your real check.
-    Fallback: allow a token ?t=SECRET_TOKEN in the URL/env.
-    """
-    try:
-        from flask_login import current_user
-        if getattr(current_user, "is_authenticated", False) and getattr(current_user, "role", "admin") == "admin":
-            return True
-    except Exception:
-        pass
-    # token fallback
-    token = os.environ.get("BACKUP_TOKEN")
-    return token and (request.args.get("t") == token or request.headers.get("X-Backup-Token") == token)
-
-
-import os, shutil
-from pathlib import Path
-
+DB_NAME  = "customer.db"
 IS_WINDOWS = bool(os.environ.get("APPDATA"))
 
-if not IS_WINDOWS:
-    # Force writable ephemeral paths on Render free
-    DB_PATH = Path("/tmp/customer.db")
-    os.environ.pop("DATABASE_PATH", None)   # ensure nothing forces /var/data
-    os.environ["DATABASE_PATH"] = str(DB_PATH)   # keep other code happy if it reads this
-    os.environ.setdefault("OUTPUT_BASE", "/tmp") # for PDFs, etc.
+# Where to write generated files (PDFs, receipts, etc.)
+OUTPUT_BASE = Path(os.environ.get("OUTPUT_BASE") or ("/tmp" if not IS_WINDOWS else "."))
 
-    # 1) Ensure /tmp/customer.db exists (seed if available)
+if IS_WINDOWS:
+    # --- Windows (desktop) ---
+    def get_user_db_folder() -> str:
+        return os.path.join(os.environ["APPDATA"], APP_NAME)
+
+    def get_user_db_path() -> str:
+        return os.path.join(get_user_db_folder(), DB_NAME)
+
+    def get_dist_db_path() -> str:
+        # read-only copy next to app.py
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(app_dir, DB_NAME)
+
+    def ensure_user_db():
+        """
+        Ensure %APPDATA%\Papaiacovou\customer.db exists, else copy from program dir.
+        """
+        user_db_folder = get_user_db_folder()
+        user_db_path   = get_user_db_path()
+        dist_db_path   = get_dist_db_path()
+        os.makedirs(user_db_folder, exist_ok=True)
+        if not os.path.exists(user_db_path):
+            if os.path.exists(dist_db_path):
+                shutil.copy2(dist_db_path, user_db_path)
+                print(f"[init] Copied DB from {dist_db_path} to {user_db_path}")
+            else:
+                # create empty DB file
+                open(user_db_path, "a").close()
+                print(f"[init] Created empty DB at {user_db_path}")
+        else:
+            print(f"[init] DB found at {user_db_path}")
+
+    # Run Windows bootstrap only on Windows
+    ensure_user_db()
+
+    DB_PATH = Path(get_user_db_path())
+
+    def db_connect():
+        # Windows uses %APPDATA% path
+        return sqlite3.connect(str(DB_PATH))
+
+else:
+    # --- Cloud (Render free) ---
+    # Use writable ephemeral path; avoids permission errors without paid Disk
+    DB_PATH = Path("/tmp") / DB_NAME
+    os.environ["DATABASE_PATH"] = str(DB_PATH)        # keep other code happy
+    os.environ.setdefault("OUTPUT_BASE", "/tmp")      # for any PDF/output dirs
+
+    # Ensure DB file exists (seed from repo if available)
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     if not DB_PATH.exists():
-        for seed in (Path("seed") / "customer.db", Path("customer.db")):
+        for seed in (Path("seed") / DB_NAME, Path(DB_NAME)):
             if seed.exists():
                 shutil.copy2(seed, DB_PATH)
                 print(f"[init] Copied seed DB -> {DB_PATH}")
@@ -135,98 +116,43 @@ if not IS_WINDOWS:
             DB_PATH.touch()
             print(f"[init] Created empty DB at {DB_PATH}")
 
-    # 2) Point ./customer.db to /tmp/customer.db so old code keeps working
-    app_dir = Path(__file__).resolve().parent
-    local_db = app_dir / "customer.db"
+    def db_connect():
+        # Cloud uses /tmp/customer.db
+        return sqlite3.connect(str(DB_PATH))
+
+# -----------------------------------------------------------------------------
+# Admin gate used by backup/restore
+# -----------------------------------------------------------------------------
+def _is_admin():
+    """
+    Replace with your real auth (Flask-Login, etc.) if you have it.
+    Fallback: allow token ?t=SECRET (env BACKUP_TOKEN) or header X-Backup-Token.
+    """
     try:
-        if local_db.exists() or local_db.is_symlink():
-            # If an old file exists and is NOT the target, replace it with a symlink
-            try:
-                if local_db.is_symlink() and local_db.resolve() == DB_PATH:
-                    pass  # already correct
-                else:
-                    local_db.unlink()
-                    local_db.symlink_to(DB_PATH)
-            except Exception:
-                # If symlink fails, copy instead
-                if local_db.exists():
-                    local_db.unlink()
-                shutil.copy2(DB_PATH, local_db)
-        else:
-            # Create fresh symlink; if not permitted, copy
-            try:
-                local_db.symlink_to(DB_PATH)
-            except Exception:
-                shutil.copy2(DB_PATH, local_db)
-    except Exception as e:
-        print(f"[init] Warning: could not link ./customer.db -> {DB_PATH}: {e}")
-# ==== end shim ====
+        from flask_login import current_user
+        if getattr(current_user, "is_authenticated", False) and getattr(current_user, "role", "admin") == "admin":
+            return True
+    except Exception:
+        pass
+    token = os.environ.get("BACKUP_TOKEN")
+    return token and (request.args.get("t") == token or request.headers.get("X-Backup-Token") == token)
 
-
-
-
-def get_user_db_folder():
-    return os.path.join(os.environ.get("APPDATA"), APP_NAME)
-
-def get_user_db_path():
-    return os.path.join(get_user_db_folder(), DB_NAME)
-
-def get_dist_db_path():
-    # This is the read-only copy shipped with your EXE (Inno/Installer puts it here)
-    app_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(app_dir, DB_NAME)
-
-def ensure_user_db():
+# -----------------------------------------------------------------------------
+# Utility: resource_path (kept for desktop bundle compatibility)
+# -----------------------------------------------------------------------------
+def resource_path(relative_path: str) -> str:
     """
-    Make sure user's %APPDATA%\Papaiacovou\customer.db exists.
-    If not, copy from program directory (dist folder).
+    Get absolute path to resource, works for dev and PyInstaller.
     """
-    user_db_folder = get_user_db_folder()
-    user_db_path = get_user_db_path()
-    dist_db_path = get_dist_db_path()
-    if not os.path.exists(user_db_folder):
-        os.makedirs(user_db_folder)
-    if not os.path.exists(user_db_path):
-        if os.path.exists(dist_db_path):
-            shutil.copy2(dist_db_path, user_db_path)
-            print(f"Copied DB from {dist_db_path} to {user_db_path}")
-        else:
-            # This is a fresh install, or somehow no DB shipped - you can create a blank db here if needed.
-            print(f"DB missing at {dist_db_path}! Creating new empty DB at {user_db_path}")
-            open(user_db_path, "w").close()
-    else:
-        print(f"DB found at {user_db_path}")
+    try:
+        base_path = sys._MEIPASS  # type: ignore[attr-defined]
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
-# Call this ONCE at the top, before anything DB-related runs:
-# Run the Windows-only bootstrap **only** when APPDATA exists
-if os.environ.get("APPDATA"):
-    ensure_user_db()
-
-
-def db_connect():
-    db_path = get_user_db_path()
-    print("Connecting to DB:", db_path)
-    return sqlite3.connect(db_path)
-
-
-# --- Optional: Outlook automation (pip install pywin32) ---
-try:
-    import win32com.client as win32  # requires: pywin32
-except Exception:
-    win32 = None
-
-app = Flask(__name__)
-app.secret_key = 'secret_key_for_flash_messages'
-
-app.config['BABEL_DEFAULT_LOCALE'] = 'en'
-
-babel = Babel(app)
-
-def get_locale():
-    return session.get('lang', 'en')
-
-babel.locale_selector_func = get_locale  # <-- This line sets your selector
-# Make company info available to every template automatically
+# -----------------------------------------------------------------------------
+# Template globals (company info shown everywhere)
+# -----------------------------------------------------------------------------
 @app.context_processor
 def inject_company():
     with closing(db_connect()) as conn:
@@ -240,7 +166,9 @@ def inject_company():
             company = {}
     return {"company": company}
 
-# ------------- AUTH HELPERS -------------
+# -----------------------------------------------------------------------------
+# AUTH helpers
+# -----------------------------------------------------------------------------
 def current_user():
     if 'user_id' not in session:
         return None
@@ -251,6 +179,7 @@ def current_user():
         if row:
             return {'id': row[0], 'username': row[1], 'role': row[2]}
     return None
+
 
 @app.context_processor
 def inject_user():
