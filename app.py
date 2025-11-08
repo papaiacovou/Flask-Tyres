@@ -3758,11 +3758,11 @@ RESTORE_FORM_HTML = """
 <p>Tip: you can pass token as ?t=... if you don't use login.</p>
 """
 
-# Expose BOTH URLs on the SAME function to avoid endpoint collisions
-@app.route("/restore_db", methods=["GET", "POST"])
-@app.route("/admin/restore", methods=["GET", "POST"])
-def restore_db():
-    if not _is_admin():  # uses your existing admin/token gate
+# Use UNIQUE endpoint names and a UNIQUE function name to avoid collisions
+@app.route("/restore_db", methods=["GET", "POST"], endpoint="restore_db_new")
+@app.route("/admin/restore", methods=["GET", "POST"], endpoint="admin_restore_new")
+def restore_db_view():
+    if not _is_admin():  # your existing admin/token gate
         return abort(403)
 
     if request.method == "GET":
@@ -3780,12 +3780,10 @@ def restore_db():
 
     try:
         if tmp_file.suffix.lower() == ".db":
-            # Replace DB
             DB_PATH.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(tmp_file, DB_PATH)
 
         elif tmp_file.suffix.lower() == ".zip":
-            # Extract ZIP; if it contains customer.db, replace; copy folders too
             with zipfile.ZipFile(tmp_file, "r") as zf:
                 zf.extractall(tmp_dir)
 
@@ -3794,7 +3792,6 @@ def restore_db():
                 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(cand, DB_PATH)
 
-            # Restore optional folders
             for name in ("invoices", "receipts", "outbox"):
                 src = tmp_dir / name
                 if src.exists() and src.is_dir():
@@ -3806,7 +3803,6 @@ def restore_db():
             return "Unsupported file type (use .db or .zip)", 400
 
     finally:
-        # Clean temp
         try:
             shutil.rmtree(tmp_dir)
         except Exception:
@@ -3814,8 +3810,7 @@ def restore_db():
 
     return "Restore complete. Reload the app.", 200
 
-
-# --- Diagnostics (optional, safe to keep) ---
+# Optional diagnostics
 @app.route("/admin/ping")
 def admin_ping():
     return "admin routes are loaded"
@@ -3824,15 +3819,13 @@ def admin_ping():
 def __routes():
     return "<pre>" + "\n".join(sorted(r.rule for r in app.url_map.iter_rules())) + "</pre>"
 
-
-# --- Backup alias: /admin/backup ---
-# This creates an alias to your EXISTING /backup_db route without relying on @admin_required.
-# It uses a different endpoint name to avoid collisions.
-@app.route('/admin/backup', methods=['GET'], endpoint='admin_backup')
+# /admin/backup alias that forwards to your existing backup handler
+# If your existing backup function is named `backup_zip` (as you showed), leave it.
+# If it's `backup_db`, change the next line accordingly.
+@app.route("/admin/backup", methods=["GET"], endpoint="admin_backup_alias")
 def backup_db_alias():
-    # Call your existing handler (named 'backup_db' or 'backup_zip' in your app).
-    # If your current function name is different, update the next line accordingly.
-    return backup_db()   # or: return backup_zip()
+    return backup_zip()   # or: return backup_db()
+
 
     
 
